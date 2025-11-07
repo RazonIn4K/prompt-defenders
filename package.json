@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "type-check": "tsc --noEmit",
     "test": "echo 'Tests not yet implemented' && exit 0",
-    "validate-rules": "node scripts/validate-rules.js"
+    "validate-rules": "node scripts/validate-rules.js",
+    "bump-rules": "node scripts/bump-rules-version.mjs"
   },
   "keywords": [],
   "author": "",

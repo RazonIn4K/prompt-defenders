@@ -1,8 +1,16 @@
+/**
+ * POST /api/scan/deep
+ *
+ * Enqueue async deep LLM analysis
+ * - Accepts inputHash and metadata
+ * - Returns queueId for polling
+ * - Does NOT store raw input (privacy-first)
+ */
+
 import type { NextApiRequest, NextApiResponse } from "next";
-import { authenticateRequest } from "../../lib/auth";
-import { checkRateLimit } from "../../lib/ratelimit";
-import { scanInput } from "../../lib/scanner";
-import { enqueueDeepAnalysis } from "../../lib/queue";
+import { authenticateRequest } from "../../../lib/auth";
+import { checkRateLimit } from "../../../lib/ratelimit";
+import { enqueueDeepAnalysis } from "../../../lib/queue";
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,7 +22,7 @@ export default async function handler(
   }
 
   try {
-    // API Key Authentication (optional in dev, required in prod)
+    // API Key Authentication
     const authResult = authenticateRequest(req.headers as Record<string, string>);
     if (!authResult.authenticated) {
       return res.status(401).json({
@@ -43,50 +51,39 @@ export default async function handler(
     res.setHeader("X-RateLimit-Remaining", remaining?.toString() || "unknown");
 
     // Validate request body
-    const { input, deepAnalysis } = req.body;
+    const { inputHash, inputLength, metadata } = req.body;
 
-    if (!input || typeof input !== "string") {
+    if (!inputHash || typeof inputHash !== "string") {
       return res.status(400).json({
         success: false,
-        error: "Invalid request. 'input' field is required and must be a string.",
+        error: "Invalid request. 'inputHash' field is required and must be a string.",
       });
     }
 
-    // Limit input size (100KB)
-    if (input.length > 100000) {
+    if (!inputLength || typeof inputLength !== "number") {
       return res.status(400).json({
         success: false,
-        error: "Input too large. Maximum size is 100KB.",
+        error: "Invalid request. 'inputLength' field is required and must be a number.",
       });
     }
 
-    // Run fast regex scan
-    const result = scanInput(input);
+    // Enqueue deep analysis
+    const queueId = await enqueueDeepAnalysis(inputHash, inputLength, metadata);
 
-    // Optionally enqueue deep analysis (if requested and enabled)
-    let queueId: string | null = null;
-    if (deepAnalysis === true) {
-      queueId = await enqueueDeepAnalysis(
-        result.meta.inputHash,
-        result.meta.inputLength,
-        {
-          fastScanScore: result.analysis.score,
-          fastScanSeverity: result.analysis.severity,
-          categories: result.analysis.categories,
-        }
-      );
+    if (!queueId) {
+      return res.status(503).json({
+        success: false,
+        error: "Queue service unavailable. Please try again later.",
+      });
     }
 
-    // Return result with optional queue ID
-    return res.status(200).json({
-      ...result,
-      ...(queueId && {
-        deepAnalysis: {
-          queueId,
-          status: "pending",
-          pollEndpoint: `/api/scan/result?id=${queueId}`,
-        },
-      }),
+    // Return queue ID for polling
+    return res.status(202).json({
+      success: true,
+      queueId,
+      status: "pending",
+      message: "Deep analysis enqueued. Poll /api/scan/result?id=" + queueId,
+      pollEndpoint: `/api/scan/result?id=${queueId}`,
     });
   } catch (error) {
     console.error("API error:", error);

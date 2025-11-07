@@ -10,9 +10,12 @@ Prompt Defenders is a Next.js application that scans text inputs for prompt inje
 
 - **Privacy-First**: Input text is NEVER stored; only HMAC-hashed in memory for correlation
 - **Fast Regex Scanning**: Synchronous detection using versioned rule packs
+- **Async Deep Analysis**: Optional LLM-based analysis via queue (privacy-preserving)
+- **API Key Authentication**: Optional production authentication (dev-permissive)
 - **Comprehensive Security**: CSP headers, rate limiting, input validation
 - **Datadog RUM Integration**: L5 observability with masked user inputs
 - **Stable API Contract**: Versioned JSON schema for reliable integration
+- **Rules Governance**: Version-controlled rule packs with changelog enforcement
 - **CI/CD Gates**: Automated validation, SBOM, vulnerability scanning
 
 ## Architecture
@@ -85,8 +88,9 @@ See [.env.example](./.env.example) for all required variables.
 - `NEXT_PUBLIC_COMMIT_SHA`: Commit SHA for version tracking
 
 **Optional (Production):**
-- `UPSTASH_REDIS_REST_URL`: Upstash Redis URL for rate limiting
+- `UPSTASH_REDIS_REST_URL`: Upstash Redis URL for rate limiting & async queue
 - `UPSTASH_REDIS_REST_TOKEN`: Upstash Redis token
+- `API_KEYS`: Comma-separated API keys for production authentication (e.g., `key1,key2`)
 
 ### Development
 
@@ -118,18 +122,34 @@ npm start
 
 ## API Documentation
 
+### Authentication (Production Only)
+
+In **production**, all API endpoints require an `X-API-Key` header:
+
+```bash
+curl -X POST https://api.promptdefenders.com/api/scan \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key-here" \
+  -d '{"input":"test"}'
+```
+
+- **Development mode**: Authentication is permissive (no key required)
+- **Production mode**: Returns `401 Unauthorized` without valid API key
+- Configure valid keys via `API_KEYS` environment variable (comma-separated)
+
 ### POST /api/scan
 
-Scan text for prompt injection patterns.
+Scan text for prompt injection patterns (fast regex-based analysis).
 
 **Request:**
 ```json
 {
-  "input": "Your text to scan here"
+  "input": "Your text to scan here",
+  "deepAnalysis": false  // Optional: enqueue async LLM analysis
 }
 ```
 
-**Response:**
+**Response (without deep analysis):**
 ```json
 {
   "success": true,
@@ -155,6 +175,20 @@ Scan text for prompt injection patterns.
 }
 ```
 
+**Response (with deep analysis enabled):**
+```json
+{
+  "success": true,
+  "analysis": { /* ... same as above ... */ },
+  "meta": { /* ... same as above ... */ },
+  "deepAnalysis": {
+    "queueId": "uuid-here",
+    "status": "pending",
+    "pollEndpoint": "/api/scan/result?id=uuid-here"
+  }
+}
+```
+
 **Rate Limits:**
 - 10 requests per minute per IP
 - Returns `429` when exceeded
@@ -162,9 +196,98 @@ Scan text for prompt injection patterns.
 
 **Schema:** See [public/api/scanner/schema.json](./public/api/scanner/schema.json)
 
+---
+
+### POST /api/scan/deep
+
+Enqueue async deep analysis (LLM-based).
+
+**Request:**
+```json
+{
+  "inputHash": "abc123...",  // HMAC hash from /api/scan
+  "inputLength": 45,
+  "metadata": {}  // Optional additional metadata
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "queueId": "uuid-here",
+  "status": "pending",
+  "message": "Deep analysis enqueued. Poll /api/scan/result?id=uuid-here",
+  "pollEndpoint": "/api/scan/result?id=uuid-here"
+}
+```
+
+**Privacy Note:** Only the input hash is stored, never the raw text.
+
+---
+
+### GET /api/scan/result?id=<queueId>
+
+Fetch async deep analysis result.
+
+**Response (pending/processing):**
+```json
+{
+  "success": true,
+  "status": "pending",  // or "processing"
+  "message": "Analysis still in progress. Please poll again.",
+  "queueId": "uuid-here",
+  "enqueuedAt": "2025-11-06T20:00:00.000Z"
+}
+```
+**HTTP Status:** `202 Accepted`
+
+**Response (completed):**
+```json
+{
+  "success": true,
+  "status": "completed",
+  "queueId": "uuid-here",
+  "enqueuedAt": "2025-11-06T20:00:00.000Z",
+  "result": {
+    "deepScore": 75,
+    "confidence": 0.85,
+    "reasoning": "Deep LLM analysis detected...",
+    "recommendations": ["..."]
+  },
+  "meta": {
+    "inputHash": "abc123...",
+    "inputLength": 45
+  }
+}
+```
+**HTTP Status:** `200 OK`
+
+**Response (failed):**
+```json
+{
+  "success": false,
+  "status": "failed",
+  "queueId": "uuid-here",
+  "error": "Analysis failed: reason"
+}
+```
+**HTTP Status:** `200 OK`
+
+**Response (not found):**
+```json
+{
+  "success": false,
+  "error": "Job not found. It may have expired (24 hour TTL)."
+}
+```
+**HTTP Status:** `404 Not Found`
+
 ## Rules & Detection
 
 Rules are defined in [public/api/scanner/rules/rules.json](./public/api/scanner/rules/rules.json).
+
+See [RULES-CHANGELOG.md](./RULES-CHANGELOG.md) for version history and changes.
 
 ### Rule Structure
 
@@ -191,6 +314,43 @@ Rules are defined in [public/api/scanner/rules/rules.json](./public/api/scanner/
 - **20-49**: Medium severity
 - **50-79**: High severity
 - **80-100**: Critical severity
+
+### Rules Governance (Phase 2)
+
+All rule changes are version-controlled and require:
+
+1. **Version Bump**: Increment version in `rules.json`
+2. **Changelog Entry**: Document changes in `RULES-CHANGELOG.md`
+3. **CI Validation**: Automated enforcement via GitHub Actions
+
+**Workflow:**
+
+```bash
+# 1. Edit rules.json with your changes
+vim public/api/scanner/rules/rules.json
+
+# 2. Bump version and add changelog template
+npm run bump-rules [major|minor|patch]
+
+# 3. Edit RULES-CHANGELOG.md to describe your changes
+vim RULES-CHANGELOG.md
+
+# 4. Commit both files
+git add public/api/scanner/rules/rules.json RULES-CHANGELOG.md
+git commit -m "chore: bump rules to v1.0.1 - added new detection pattern"
+
+# 5. Push (CI will validate version bump and changelog)
+git push
+```
+
+**CI Enforcement:**
+
+The `rules-validate.yml` workflow ensures:
+- If `rules.json` changed, version was bumped
+- Changelog has a corresponding entry (not just template)
+- PR fails if requirements are not met
+
+This governance ensures rule changes are auditable and traceable.
 
 ## Security
 
@@ -331,14 +491,20 @@ done
 
 ## Roadmap / TODOs
 
-- [ ] Move token bucket to Upstash in production
-- [ ] Add async deep LLM analysis worker (non-blocking)
-- [ ] Implement API key authentication
+### Phase 2 (Completed ✅)
+- [x] Add async deep LLM analysis worker (non-blocking)
+- [x] Implement API key authentication (optional, prod-only)
+- [x] Implement background queue for deep analysis (Upstash KV)
+- [x] Rules governance with version control and changelog
+- [x] UI polish (status badges, copy button, disclosure)
+
+### Future Enhancements
+- [ ] Integrate actual LLM API for deep analysis (currently placeholder)
 - [ ] Add Datadog Serverless APM documentation
-- [ ] Implement background queue for deep analysis
 - [ ] Add CAPTCHA for public endpoints
 - [ ] Create dashboard for rule management
 - [ ] Add A/B testing for rule effectiveness
+- [ ] Implement worker process for queue consumption
 
 ## Contributing
 

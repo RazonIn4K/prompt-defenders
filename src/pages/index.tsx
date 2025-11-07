@@ -1,11 +1,13 @@
 import { useState } from "react";
 import Head from "next/head";
+import StatusBadge from "../components/StatusBadge";
+import CopyButton from "../components/CopyButton";
 
 interface ScanResult {
   success: boolean;
   analysis?: {
     score: number;
-    severity: string;
+    severity: "low" | "medium" | "high" | "critical";
     categories: string[];
     advisories: Array<{
       ruleId: string;
@@ -20,6 +22,11 @@ interface ScanResult {
     rulesVersion: string;
     timestamp: string;
   };
+  deepAnalysis?: {
+    queueId: string;
+    status: string;
+    pollEndpoint: string;
+  };
   error?: string;
 }
 
@@ -27,6 +34,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deepAnalysis, setDeepAnalysis] = useState(false);
 
   const handleScan = async () => {
     if (!input.trim()) {
@@ -43,7 +51,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify({ input, deepAnalysis }),
       });
 
       const data = await response.json();
@@ -89,13 +97,24 @@ export default function Home() {
           Privacy-first prompt injection detection scanner
         </p>
 
-        <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "16px", marginBottom: "24px" }}>
-          <h3 style={{ fontSize: "14px", fontWeight: "600", marginBottom: "8px" }}>Privacy & Telemetry Disclosure</h3>
-          <p style={{ fontSize: "14px", color: "#6b7280", lineHeight: "1.6" }}>
-            <strong>Your privacy matters:</strong> Input text is never stored. We compute a HMAC hash for correlation purposes only (kept in memory).
-            Minimal telemetry is collected via Datadog RUM (hashed data only). Results are guidance, not certification.
-            See our <a href="/docs/PRIVACY.md" style={{ color: "#2563eb", textDecoration: "underline" }}>Privacy Policy</a> and{" "}
-            <a href="/docs/SECURITY.md" style={{ color: "#2563eb", textDecoration: "underline" }}>Security Policy</a> for details.
+        <div style={{ background: "#eff6ff", border: "2px solid #3b82f6", borderRadius: "8px", padding: "16px", marginBottom: "24px" }}>
+          <h3 style={{ fontSize: "14px", fontWeight: "700", marginBottom: "8px", color: "#1e40af" }}>
+            🔒 Privacy & Disclosure
+          </h3>
+          <p style={{ fontSize: "14px", color: "#1e3a8a", lineHeight: "1.6", marginBottom: "8px" }}>
+            <strong>Hashed only • Guidance, not certification</strong>
+          </p>
+          <p style={{ fontSize: "13px", color: "#475569", lineHeight: "1.6" }}>
+            Your input text is <strong>never stored</strong>. We compute a HMAC hash for correlation only (in memory).
+            Minimal telemetry via Datadog RUM with <code>mask-user-input</code> enabled.
+            Results are advisory guidance, not security certification.
+          </p>
+          <p style={{ fontSize: "13px", color: "#475569", marginTop: "8px" }}>
+            📚 <a href="https://github.com/RazonIn4K/prompt-defenders/blob/main/docs/PRIVACY.md" style={{ color: "#2563eb", textDecoration: "underline" }}>Privacy Policy</a>
+            {" • "}
+            <a href="https://github.com/RazonIn4K/prompt-defenders/blob/main/docs/SECURITY.md" style={{ color: "#2563eb", textDecoration: "underline" }}>Security Policy</a>
+            {" • "}
+            <a href="https://github.com/RazonIn4K/prompt-defenders/blob/main/RULES-CHANGELOG.md" style={{ color: "#2563eb", textDecoration: "underline" }}>Rules Changelog</a>
           </p>
         </div>
 
@@ -121,22 +140,34 @@ export default function Home() {
           />
         </div>
 
-        <button
-          onClick={handleScan}
-          disabled={loading}
-          style={{
-            padding: "12px 24px",
-            background: loading ? "#9ca3af" : "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "600",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Scanning..." : "Scan Input"}
-        </button>
+        <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "24px" }}>
+          <button
+            onClick={handleScan}
+            disabled={loading}
+            style={{
+              padding: "12px 24px",
+              background: loading ? "#9ca3af" : "#2563eb",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+          >
+            {loading ? "Scanning..." : "Scan Input"}
+          </button>
+
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#6b7280" }}>
+            <input
+              type="checkbox"
+              checked={deepAnalysis}
+              onChange={(e) => setDeepAnalysis(e.target.checked)}
+              style={{ width: "16px", height: "16px" }}
+            />
+            Enable deep analysis (async)
+          </label>
+        </div>
 
         {result && (
           <div style={{ marginTop: "32px" }}>
@@ -144,20 +175,45 @@ export default function Home() {
 
             {result.success && result.analysis ? (
               <>
-                <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-                  <div style={{ flex: 1, background: "#f9fafb", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                    <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Risk Score</div>
-                    <div style={{ fontSize: "32px", fontWeight: "bold" }}>{result.analysis.score}</div>
-                  </div>
-                  <div style={{ flex: 1, background: "#f9fafb", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                    <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Severity</div>
-                    <div style={{ fontSize: "24px", fontWeight: "bold", color: getSeverityColor(result.analysis.severity), textTransform: "uppercase" }}>
-                      {result.analysis.severity}
+                <div style={{ display: "flex", gap: "16px", marginBottom: "24px", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
+                      <div style={{ flex: 1, background: "#f9fafb", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Risk Score</div>
+                        <div style={{ fontSize: "32px", fontWeight: "bold" }}>{result.analysis.score}</div>
+                      </div>
+                      <div style={{ flex: 1, background: "#f9fafb", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>Severity</div>
+                        <StatusBadge severity={result.analysis.severity} score={result.analysis.score} />
+                      </div>
+                      <div style={{ flex: 1, background: "#f9fafb", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+                        <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Detections</div>
+                        <div style={{ fontSize: "32px", fontWeight: "bold" }}>{result.analysis.advisories.length}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ flex: 1, background: "#f9fafb", padding: "16px", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
-                    <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Detections</div>
-                    <div style={{ fontSize: "32px", fontWeight: "bold" }}>{result.analysis.advisories.length}</div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <CopyButton data={result} label="Copy Full Result" />
+                      {result.deepAnalysis && (
+                        <a
+                          href={result.deepAnalysis.pollEndpoint}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: "8px 16px",
+                            backgroundColor: "#8b5cf6",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontWeight: 600,
+                            fontSize: "14px",
+                            textDecoration: "none",
+                            display: "inline-block",
+                          }}
+                        >
+                          View Deep Analysis (ID: {result.deepAnalysis.queueId.slice(0, 8)}...)
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
 

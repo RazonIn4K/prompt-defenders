@@ -6,11 +6,13 @@ on:
     paths:
       - "public/api/scanner/rules/**"
       - "public/api/scanner/schema.json"
+      - "RULES-CHANGELOG.md"
   pull_request:
     branches: [main, develop]
     paths:
       - "public/api/scanner/rules/**"
       - "public/api/scanner/schema.json"
+      - "RULES-CHANGELOG.md"
 
 jobs:
   validate:
@@ -19,6 +21,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for version comparison
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
@@ -31,3 +35,9 @@ jobs:
 
       - name: Validate rules structure and version
         run: npm run validate-rules
+
+      - name: Check version bump and changelog (PR only)
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-rules-version-bump.js
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
