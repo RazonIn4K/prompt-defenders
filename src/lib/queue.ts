@@ -4,10 +4,40 @@
  *
  * Privacy: Only stores inputHash, length, timestamp, and metadata
  * Never stores raw input text
+ *
+ * Includes Sentry breadcrumb tracking for observability
  */
 
 import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
+
+/**
+ * Add Sentry breadcrumb for queue operations
+ */
+function addQueueBreadcrumb(
+  message: string,
+  data?: Record<string, any>,
+  level: "info" | "warning" | "error" = "info"
+): void {
+  // Check if Sentry is available (browser or server)
+  if (typeof window !== "undefined" && (window as any).Sentry) {
+    (window as any).Sentry.addBreadcrumb({
+      category: "queue",
+      message,
+      data,
+      level,
+      timestamp: Date.now() / 1000,
+    });
+  } else if (global && (global as any).Sentry) {
+    (global as any).Sentry.addBreadcrumb({
+      category: "queue",
+      message,
+      data,
+      level,
+      timestamp: Date.now() / 1000,
+    });
+  }
+}
 
 // Initialize Upstash Redis client
 let redis: Redis | null = null;
@@ -59,6 +89,7 @@ export async function enqueueDeepAnalysis(
   const client = getRedisClient();
   if (!client) {
     console.warn("Queue not available - Upstash Redis not configured");
+    addQueueBreadcrumb("Queue unavailable - Redis not configured", {}, "warning");
     return null;
   }
 
@@ -80,9 +111,11 @@ export async function enqueueDeepAnalysis(
     await client.lpush("queue:pending", jobId);
 
     console.log(`✅ Enqueued job ${jobId} for deep analysis`);
+    addQueueBreadcrumb("Job enqueued", { jobId, inputLength }, "info");
     return jobId;
   } catch (error) {
     console.error("Failed to enqueue job:", error);
+    addQueueBreadcrumb("Failed to enqueue job", { jobId, error: (error as Error).message }, "error");
     return null;
   }
 }
@@ -101,12 +134,15 @@ export async function getJobStatus(jobId: string): Promise<QueueJob | null> {
   try {
     const data = await client.get<string>(`queue:job:${jobId}`);
     if (!data) {
+      addQueueBreadcrumb("Job not found", { jobId }, "warning");
       return null;
     }
 
+    addQueueBreadcrumb("Job status retrieved", { jobId }, "info");
     return JSON.parse(data) as QueueJob;
   } catch (error) {
     console.error("Failed to get job status:", error);
+    addQueueBreadcrumb("Failed to get job status", { jobId, error: (error as Error).message }, "error");
     return null;
   }
 }
@@ -133,6 +169,7 @@ export async function updateJobStatus(
     const existingData = await client.get<string>(`queue:job:${jobId}`);
     if (!existingData) {
       console.error(`Job ${jobId} not found`);
+      addQueueBreadcrumb("Job not found for update", { jobId }, "error");
       return false;
     }
 
@@ -145,9 +182,11 @@ export async function updateJobStatus(
     await client.setex(`queue:job:${jobId}`, 86400, JSON.stringify(job));
 
     console.log(`✅ Updated job ${jobId} status to ${status}`);
+    addQueueBreadcrumb("Job status updated", { jobId, status, hasError: !!error }, status === "failed" ? "error" : "info");
     return true;
   } catch (error) {
     console.error("Failed to update job status:", error);
+    addQueueBreadcrumb("Failed to update job status", { jobId, error: (error as Error).message }, "error");
     return false;
   }
 }
@@ -164,9 +203,13 @@ export async function getNextPendingJob(): Promise<string | null> {
 
   try {
     const jobId = await client.rpop<string>("queue:pending");
+    if (jobId) {
+      addQueueBreadcrumb("Job dequeued", { jobId }, "info");
+    }
     return jobId || null;
   } catch (error) {
     console.error("Failed to get next pending job:", error);
+    addQueueBreadcrumb("Failed to dequeue job", { error: (error as Error).message }, "error");
     return null;
   }
 }
@@ -182,9 +225,13 @@ export async function performDeepAnalysis(
   inputHash: string,
   metadata?: Record<string, any>
 ): Promise<any> {
+  addQueueBreadcrumb("Starting deep analysis", { inputHash: inputHash.substring(0, 8) + "..." }, "info");
+
   // TODO: Replace with actual LLM API call
   // For now, simulate processing delay
   await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  addQueueBreadcrumb("Deep analysis completed", { inputHash: inputHash.substring(0, 8) + "..." }, "info");
 
   return {
     deepScore: 75,

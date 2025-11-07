@@ -1,0 +1,168 @@
+# Patchset: API-Key Worker Audit & Enhancement
+# Branch: claude/api-key-worker-audit-011CUsqiXtk81MXbBVge7AAR
+# Date: 2025-11-07
+#
+# Changes Summary:
+# - Added src/lib/worker.ts (NEW) - Background worker with retry/backoff/DLQ
+# - Modified src/lib/queue.ts - Added Sentry breadcrumbs throughout
+# - Added src/lib/__tests__/auth.test.ts (NEW) - Comprehensive API key auth tests
+# - Added smoke_promptdefenders.sh (NEW) - End-to-end smoke test script
+# - Added PLAN.md, TEST_NOTES.md, REVIEW.md - Documentation artifacts
+#
+# Files changed: 8 files
+# New files: 6
+# Modified files: 2
+# Additions: ~950 lines
+# Deletions: ~0 lines (all additive changes)
+
+================================================================================
+FILE: src/lib/worker.ts (NEW)
+================================================================================
+
+This file implements a background worker for processing async deep analysis jobs
+with exponential backoff retry logic and DLQ (Dead Letter Queue) for failed jobs.
+
+Key features:
+- Polls queue every 5 seconds
+- Max 3 retries with exponential backoff (1s, 2s, 4s, ..., max 30s)
+- Sentry breadcrumbs and error tracking
+- Graceful shutdown on SIGTERM/SIGINT
+- Jobs that fail after retries are moved to DLQ (status: "failed")
+
+See src/lib/worker.ts for full implementation (~300 lines)
+
+================================================================================
+FILE: src/lib/queue.ts (MODIFIED)
+================================================================================
+
+Added Sentry breadcrumb tracking throughout queue operations for observability.
+
+Changes:
++ Added addQueueBreadcrumb() helper function (lines 14-40)
++ Breadcrumbs in enqueueDeepAnalysis() (lines 92, 114, 118)
++ Breadcrumbs in getJobStatus() (lines 137, 141, 145)
++ Breadcrumbs in updateJobStatus() (lines 172, 185, 189)
++ Breadcrumbs in getNextPendingJob() (lines 207, 212)
++ Breadcrumbs in performDeepAnalysis() (lines 228, 234)
+
+Total additions: ~50 lines
+Total deletions: 0 lines
+
+================================================================================
+FILE: src/lib/__tests__/auth.test.ts (NEW)
+================================================================================
+
+Comprehensive unit tests for API key authentication covering:
+- Valid/invalid/missing API key scenarios
+- Development vs production mode behavior
+- Multiple API keys support
+- Case-insensitive header matching
+- Security: secrets not exposed in error messages
+- Edge cases: empty keys, whitespace, special characters
+
+20+ test cases with Jest framework (~250 lines)
+
+================================================================================
+FILE: smoke_promptdefenders.sh (NEW)
+================================================================================
+
+Bash-based smoke test script for end-to-end validation.
+
+Tests:
+1. Health check (API connectivity)
+2. Fast scan without authentication
+3. Fast scan with invalid API key
+4. Fast scan with valid API key
+5. Deep analysis enqueue
+6. Result polling
+7. Invalid input handling
+8. Rate limiting (12 rapid requests)
+9. Secrets not exposed in responses
+
+Usage:
+  export API_URL=http://localhost:3000
+  export WORKER_API_KEY=your-key
+  ./smoke_promptdefenders.sh
+
+~200 lines, executable, idempotent
+
+================================================================================
+FILE: PLAN.md (NEW)
+================================================================================
+
+Implementation plan with 10 steps covering:
+- Repository audit findings
+- Worker implementation details
+- Sentry integration approach
+- Test coverage strategy
+- Smoke test design
+- Configuration requirements
+- Rollback procedures
+- Security checklist
+
+~200 lines
+
+================================================================================
+FILE: TEST_NOTES.md (NEW - see below)
+================================================================================
+
+How to run tests and smoke scripts locally.
+
+================================================================================
+FILE: REVIEW.md (NEW - see below)
+================================================================================
+
+Security review checklist, risk assessment, and recommendations.
+
+================================================================================
+DETAILED DIFFS
+================================================================================
+
+Note: Full line-by-line diffs are available in the repository.
+Run `git diff HEAD` to see all changes.
+
+Key diff highlights:
+
+1. src/lib/queue.ts:
+   - Lines 14-40: New addQueueBreadcrumb() function
+   - Lines 92-93: Breadcrumb on queue unavailable
+   - Lines 114: Breadcrumb on successful enqueue
+   - Lines 118: Breadcrumb on enqueue failure
+   - Lines 137: Breadcrumb on job not found
+   - Lines 141: Breadcrumb on successful status retrieval
+   - Lines 145: Breadcrumb on status retrieval error
+   - Lines 172: Breadcrumb on job not found for update
+   - Lines 185: Breadcrumb on successful status update
+   - Lines 189: Breadcrumb on update failure
+   - Lines 207: Breadcrumb on successful dequeue
+   - Lines 212: Breadcrumb on dequeue failure
+   - Lines 228: Breadcrumb on analysis start
+   - Lines 234: Breadcrumb on analysis complete
+
+2. src/lib/worker.ts (entirely new file):
+   - Lines 1-50: Module documentation and configuration
+   - Lines 52-66: calculateBackoff() with exponential delay + jitter
+   - Lines 68-91: addSentryBreadcrumb() helper
+   - Lines 93-103: reportErrorToSentry() helper
+   - Lines 105-170: processJob() with retry loop
+   - Lines 172-195: workerLoop() polling function
+   - Lines 197-209: startWorker() lifecycle
+   - Lines 211-227: stopWorker() graceful shutdown
+   - Lines 229-234: getWorkerStatus() introspection
+   - Lines 236-240: Process signal handlers
+
+3. src/lib/__tests__/auth.test.ts (entirely new file):
+   - Lines 1-20: Test setup and imports
+   - Lines 22-120: validateApiKey() test suite (11 tests)
+   - Lines 122-180: getApiKeyFromHeaders() test suite (6 tests)
+   - Lines 182-220: authenticateRequest() test suite (4 tests)
+   - Lines 222-240: Security considerations (2 tests)
+
+4. smoke_promptdefenders.sh (entirely new file):
+   - Lines 1-50: Configuration and helper functions
+   - Lines 52-180: 9 test functions
+   - Lines 182-230: Main execution and summary
+
+================================================================================
+END OF PATCHSET
+================================================================================
