@@ -1,0 +1,77 @@
+{
+  "version": "1.0.0",
+  "updated": "2025-11-06",
+  "description": "Prompt injection detection rule pack",
+  "rules": [
+    {
+      "id": "PI-001",
+      "description": "Direct instruction override attempts",
+      "severity": "high",
+      "pattern": "(ignore|disregard|forget)\\s+(previous|all|above|prior)\\s+(instructions|commands|rules|directives)",
+      "rationale": "Common pattern in prompt injection attacks attempting to override system instructions"
+    },
+    {
+      "id": "PI-002",
+      "description": "System prompt extraction",
+      "severity": "critical",
+      "pattern": "(show|reveal|display|print|output)\\s+(your|the)\\s+(system|original|initial)\\s+(prompt|instructions)",
+      "rationale": "Attempts to extract system prompts are critical security concerns"
+    },
+    {
+      "id": "PI-003",
+      "description": "Role manipulation",
+      "severity": "high",
+      "pattern": "(you\\s+are\\s+now|act\\s+as|pretend\\s+to\\s+be|roleplay\\s+as)\\s+(a|an)?\\s*\\w+",
+      "rationale": "Attempts to redefine AI role or behavior outside of intended use"
+    },
+    {
+      "id": "PI-004",
+      "description": "Delimiter manipulation",
+      "severity": "medium",
+      "pattern": "(end\\s+of|start\\s+of)\\s+(system|user|assistant|instruction)",
+      "rationale": "Attempts to manipulate conversation structure delimiters"
+    },
+    {
+      "id": "PI-005",
+      "description": "Encoded payload indicators",
+      "severity": "high",
+      "pattern": "(base64|rot13|hex|decode|decrypt)\\s*[:\\(]",
+      "rationale": "Encoded content may be attempting to bypass content filters"
+    },
+    {
+      "id": "PI-006",
+      "description": "Developer mode activation",
+      "severity": "critical",
+      "pattern": "(enable|activate|enter|switch\\s+to)\\s+(developer|debug|admin|root)\\s+(mode|access)",
+      "rationale": "Attempts to access privileged or debug modes"
+    },
+    {
+      "id": "PI-007",
+      "description": "Jailbreak patterns",
+      "severity": "critical",
+      "pattern": "(DAN|do\\s+anything\\s+now|without\\s+any\\s+rules|unrestricted\\s+mode)",
+      "rationale": "Known jailbreak pattern attempting to bypass safety guidelines"
+    },
+    {
+      "id": "PI-008",
+      "description": "Bypass safety filters",
+      "severity": "high",
+      "pattern": "(bypass|circumvent|avoid|disable)\\s+(filters?|safety|guidelines|restrictions)",
+      "rationale": "Direct attempts to bypass security controls"
+    },
+    {
+      "id": "PI-009",
+      "description": "SQL injection patterns",
+      "severity": "critical",
+      "pattern": "(';|--;|/\\*|\\*/|xp_|sp_|exec\\s*\\(|union\\s+select)",
+      "rationale": "SQL injection attempts in prompt context"
+    },
+    {
+      "id": "PI-010",
+      "description": "Excessive repetition",
+      "severity": "low",
+      "pattern": "(\\b\\w+\\b)(?:\\s+\\1){9,}",
+      "rationale": "Excessive repetition may attempt to confuse or overflow filters"
+    }
+  ]
+}
