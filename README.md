@@ -488,6 +488,11 @@ done
 ### Optional (Production)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
+- `SENTRY_DSN`
+- `DEEP_ANALYSIS_MAX_ATTEMPTS`
+- `DEEP_ANALYSIS_BACKOFF_BASE_MS`
+- `DEEP_ANALYSIS_BACKOFF_CAP_MS`
+- `WORKER_IDLE_DELAY_MS`
 
 ## Roadmap / TODOs
 
@@ -504,7 +509,7 @@ done
 - [ ] Add CAPTCHA for public endpoints
 - [ ] Create dashboard for rule management
 - [ ] Add A/B testing for rule effectiveness
-- [ ] Implement worker process for queue consumption
+- [x] Implement worker process for queue consumption
 
 ## Contributing
 

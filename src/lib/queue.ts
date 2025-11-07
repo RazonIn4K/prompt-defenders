@@ -11,33 +11,23 @@
 import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
 
-/**
- * Add Sentry breadcrumb for queue operations
- */
-function addQueueBreadcrumb(
-  message: string,
-  data?: Record<string, any>,
-  level: "info" | "warning" | "error" = "info"
-): void {
-  // Check if Sentry is available (browser or server)
-  if (typeof window !== "undefined" && (window as any).Sentry) {
-    (window as any).Sentry.addBreadcrumb({
-      category: "queue",
-      message,
-      data,
-      level,
-      timestamp: Date.now() / 1000,
-    });
-  } else if (global && (global as any).Sentry) {
-    (global as any).Sentry.addBreadcrumb({
-      category: "queue",
-      message,
-      data,
-      level,
-      timestamp: Date.now() / 1000,
-    });
-  }
-}
+const QUEUE_PENDING_KEY = "queue:pending";
+const QUEUE_RETRY_KEY = "queue:retry";
+
+const MAX_ATTEMPTS = Number.parseInt(
+  process.env.DEEP_ANALYSIS_MAX_ATTEMPTS ?? "3",
+  10
+);
+const BACKOFF_BASE_MS = Number.parseInt(
+  process.env.DEEP_ANALYSIS_BACKOFF_BASE_MS ?? "2000",
+  10
+);
+const BACKOFF_CAP_MS = Number.parseInt(
+  process.env.DEEP_ANALYSIS_BACKOFF_CAP_MS ?? "30000",
+  10
+);
+
+const JOB_TTL_SECONDS = 86400; // 24 hours
 
 // Initialize Upstash Redis client
 let redis: Redis | null = null;
@@ -69,9 +59,22 @@ export interface QueueJob {
   inputLength: number;
   timestamp: string;
   status: "pending" | "processing" | "completed" | "failed";
+  attempts: number;
+  maxAttempts: number;
+  lastAttemptAt?: string;
+  lastError?: string;
   result?: any; // Deep analysis result (when completed)
   error?: string; // Error message (when failed)
   metadata?: Record<string, any>; // Additional metadata
+}
+
+export interface UpdateJobOptions {
+  result?: any;
+  error?: string;
+  attempts?: number;
+  lastAttemptAt?: string;
+  lastError?: string;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -100,15 +103,17 @@ export async function enqueueDeepAnalysis(
     inputLength,
     timestamp: new Date().toISOString(),
     status: "pending",
+    attempts: 0,
+    maxAttempts: Math.max(1, MAX_ATTEMPTS),
     metadata,
   };
 
   try {
     // Store job with 24 hour TTL
-    await client.setex(`queue:job:${jobId}`, 86400, JSON.stringify(job));
+    await client.setex(`queue:job:${jobId}`, JOB_TTL_SECONDS, JSON.stringify(job));
 
     // Add to pending queue (list)
-    await client.lpush("queue:pending", jobId);
+    await client.lpush(QUEUE_PENDING_KEY, jobId);
 
     console.log(`✅ Enqueued job ${jobId} for deep analysis`);
     addQueueBreadcrumb("Job enqueued", { jobId, inputLength }, "info");
@@ -138,8 +143,14 @@ export async function getJobStatus(jobId: string): Promise<QueueJob | null> {
       return null;
     }
 
-    addQueueBreadcrumb("Job status retrieved", { jobId }, "info");
-    return JSON.parse(data) as QueueJob;
+    const job = JSON.parse(data) as QueueJob;
+    if (typeof job.attempts !== "number") {
+      job.attempts = 0;
+    }
+    if (typeof job.maxAttempts !== "number") {
+      job.maxAttempts = Math.max(1, MAX_ATTEMPTS);
+    }
+    return job;
   } catch (error) {
     console.error("Failed to get job status:", error);
     addQueueBreadcrumb("Failed to get job status", { jobId, error: (error as Error).message }, "error");
@@ -148,17 +159,15 @@ export async function getJobStatus(jobId: string): Promise<QueueJob | null> {
 }
 
 /**
- * Update job status
+ * Update job status with optional metadata updates
  * @param jobId - Job ID
  * @param status - New status
- * @param result - Optional result data
- * @param error - Optional error message
- */
+ * @param options - Additional job property updates
+*/
 export async function updateJobStatus(
   jobId: string,
   status: QueueJob["status"],
-  result?: any,
-  error?: string
+  options: UpdateJobOptions = {}
 ): Promise<boolean> {
   const client = getRedisClient();
   if (!client) {
@@ -175,11 +184,32 @@ export async function updateJobStatus(
 
     const job: QueueJob = JSON.parse(existingData);
     job.status = status;
-    if (result) job.result = result;
-    if (error) job.error = error;
+    if (options.result !== undefined) {
+      job.result = options.result;
+    }
+
+    if (options.error !== undefined) {
+      job.error = options.error;
+    }
+
+    if (options.attempts !== undefined) {
+      job.attempts = options.attempts;
+    }
+
+    if (options.lastAttemptAt !== undefined) {
+      job.lastAttemptAt = options.lastAttemptAt;
+    }
+
+    if (options.lastError !== undefined) {
+      job.lastError = options.lastError;
+    }
+
+    if (options.metadata !== undefined) {
+      job.metadata = options.metadata;
+    }
 
     // Update with 24 hour TTL
-    await client.setex(`queue:job:${jobId}`, 86400, JSON.stringify(job));
+    await client.setex(`queue:job:${jobId}`, JOB_TTL_SECONDS, JSON.stringify(job));
 
     console.log(`✅ Updated job ${jobId} status to ${status}`);
     addQueueBreadcrumb("Job status updated", { jobId, status, hasError: !!error }, status === "failed" ? "error" : "info");
@@ -202,16 +232,100 @@ export async function getNextPendingJob(): Promise<string | null> {
   }
 
   try {
-    const jobId = await client.rpop<string>("queue:pending");
-    if (jobId) {
-      addQueueBreadcrumb("Job dequeued", { jobId }, "info");
-    }
+    const jobId = await client.rpop<string>(QUEUE_PENDING_KEY);
     return jobId || null;
   } catch (error) {
     console.error("Failed to get next pending job:", error);
     addQueueBreadcrumb("Failed to dequeue job", { error: (error as Error).message }, "error");
     return null;
   }
+}
+
+/**
+ * Schedule a job for retry using exponential backoff.
+ * @param jobId - Job identifier.
+ * @param delayMs - Delay in milliseconds before retry becomes available.
+ */
+export async function scheduleJobRetry(jobId: string, delayMs: number): Promise<boolean> {
+  const client = getRedisClient();
+  if (!client) {
+    return false;
+  }
+
+  try {
+    const retryTimestamp = Date.now() + delayMs;
+    await client.zadd(QUEUE_RETRY_KEY, {
+      score: retryTimestamp,
+      member: jobId,
+    });
+    console.log(`⏳ Scheduled retry for job ${jobId} in ${delayMs}ms`);
+    return true;
+  } catch (error) {
+    console.error("Failed to schedule job retry:", error);
+    return false;
+  }
+}
+
+/**
+ * Release jobs whose retry delay has elapsed back into the pending queue.
+ * @returns Number of jobs released.
+ */
+export async function releaseScheduledJobs(): Promise<number> {
+  const client = getRedisClient();
+  if (!client) {
+    return 0;
+  }
+
+  try {
+    const now = Date.now();
+    const dueJobs = (await client.zrange(QUEUE_RETRY_KEY, 0, now, {
+      byScore: true,
+    })) as string[];
+
+    if (dueJobs.length === 0) {
+      return 0;
+    }
+
+    const pipeline = client.multi();
+    for (const jobId of dueJobs) {
+      pipeline.lpush(QUEUE_PENDING_KEY, jobId);
+    }
+    pipeline.zremrangebyscore(QUEUE_RETRY_KEY, 0, now);
+    await pipeline.exec();
+
+    console.log(`🔁 Released ${dueJobs.length} job(s) back to pending queue`);
+    return dueJobs.length;
+  } catch (error) {
+    console.error("Failed to release scheduled jobs:", error);
+    return 0;
+  }
+}
+
+/**
+ * Compute an exponential backoff delay with optional cap.
+ * @param attempt - Attempt count (1-indexed).
+ * @param baseMs - Base delay in milliseconds.
+ * @param capMs - Maximum delay in milliseconds.
+ */
+export function computeBackoffDelay(
+  attempt: number,
+  baseMs: number = BACKOFF_BASE_MS,
+  capMs: number = BACKOFF_CAP_MS
+): number {
+  if (attempt <= 1) {
+    return Math.min(baseMs, capMs);
+  }
+
+  const delay = baseMs * 2 ** (attempt - 1);
+  return Math.min(delay, capMs);
+}
+
+export function getQueueDefaults() {
+  return {
+    maxAttempts: Math.max(1, MAX_ATTEMPTS),
+    backoffBaseMs: BACKOFF_BASE_MS,
+    backoffCapMs: BACKOFF_CAP_MS,
+  };
 }
 
 /**
