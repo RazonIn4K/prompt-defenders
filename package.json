@@ -10,15 +10,19 @@
     "lint": "echo 'Linting not yet configured' && exit 0",
     "typecheck": "tsc --noEmit",
     "type-check": "tsc --noEmit",
-    "test": "echo 'Tests not yet implemented' && exit 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "validate-rules": "node scripts/validate-rules.js",
-    "bump-rules": "node scripts/bump-rules-version.mjs"
+    "bump-rules": "node scripts/bump-rules-version.mjs",
+    "worker": "tsx src/worker/deepAnalysisWorker.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@datadog/browser-rum": "^5.31.0",
+    "@sentry/node": "^8.36.0",
+    "@sentry/types": "^8.55.0",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -32,6 +36,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^16.0.1"
+    "eslint-config-next": "^16.0.1",
+    "tsx": "^4.19.1",
+    "vitest": "^2.1.8"
   }
 }

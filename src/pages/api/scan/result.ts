@@ -59,6 +59,9 @@ export default async function handler(
           message: "Analysis still in progress. Please poll again.",
           queueId: job.id,
           enqueuedAt: job.timestamp,
+          attempts: job.attempts,
+          lastAttemptAt: job.lastAttemptAt,
+          lastError: job.lastError,
         });
 
       case "completed":
@@ -72,6 +75,8 @@ export default async function handler(
             inputHash: job.inputHash,
             inputLength: job.inputLength,
           },
+          attempts: job.attempts,
+          lastAttemptAt: job.lastAttemptAt,
         });
 
       case "failed":
@@ -85,6 +90,9 @@ export default async function handler(
             inputHash: job.inputHash,
             inputLength: job.inputLength,
           },
+          attempts: job.attempts,
+          lastAttemptAt: job.lastAttemptAt,
+          lastError: job.lastError,
         });
 
       default:
