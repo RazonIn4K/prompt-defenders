@@ -9,6 +9,7 @@
  */
 
 import { getNextPendingJob, getJobStatus, updateJobStatus, performDeepAnalysis, QueueJob } from "./queue";
+import { addBreadcrumb, captureException, initializeMonitoring } from "./monitoring";
 
 // Worker configuration
 const WORKER_CONFIG = {
@@ -37,79 +38,50 @@ function calculateBackoff(attempt: number): number {
 }
 
 /**
- * Add Sentry breadcrumb for queue operations
- * @param message - Breadcrumb message
- * @param data - Additional data
- * @param level - Severity level
- */
-function addSentryBreadcrumb(
-  message: string,
-  data?: Record<string, any>,
-  level: "info" | "warning" | "error" = "info"
-): void {
-  // Only add breadcrumb if Sentry is available
-  if (typeof window !== "undefined" && (window as any).Sentry) {
-    (window as any).Sentry.addBreadcrumb({
-      category: "queue",
-      message,
-      data,
-      level,
-      timestamp: Date.now() / 1000,
-    });
-  } else if (global && (global as any).Sentry) {
-    (global as any).Sentry.addBreadcrumb({
-      category: "queue",
-      message,
-      data,
-      level,
-      timestamp: Date.now() / 1000,
-    });
-  }
-
-  // Always log for debugging
-  const logFn = level === "error" ? console.error : level === "warning" ? console.warn : console.log;
-  logFn(`[Worker Breadcrumb] ${message}`, data || "");
-}
-
-/**
- * Report error to Sentry
- * @param error - Error object
- * @param context - Additional context
- */
-function reportErrorToSentry(error: Error, context?: Record<string, any>): void {
-  if (typeof window !== "undefined" && (window as any).Sentry) {
-    (window as any).Sentry.captureException(error, { extra: context });
-  } else if (global && (global as any).Sentry) {
-    (global as any).Sentry.captureException(error, { extra: context });
-  }
-  console.error("Worker error:", error, context);
-}
-
-/**
  * Process a single job with retry logic
  * @param jobId - Job ID to process
- * @returns Success status
+ * @returns True if successful, false if failed after all retries
  */
 async function processJob(jobId: string): Promise<boolean> {
-  addSentryBreadcrumb("Processing job", { jobId }, "info");
+  addBreadcrumb({
+    category: "worker",
+    message: "Processing job",
+    data: { jobId },
+    level: "info",
+  });
 
   try {
     // Get job details
     const job = await getJobStatus(jobId);
     if (!job) {
-      addSentryBreadcrumb("Job not found", { jobId }, "warning");
+      addBreadcrumb({
+        category: "worker",
+        message: "Job not found",
+        data: { jobId },
+        level: "warning",
+      });
       return false;
     }
 
     // Check if already processed
     if (job.status === "completed" || job.status === "failed") {
-      addSentryBreadcrumb("Job already processed", { jobId, status: job.status }, "info");
+      addBreadcrumb({
+        category: "worker",
+        message: "Job already processed",
+        data: { jobId, status: job.status },
+        level: "info",
+      });
       return true;
     }
 
     // Update to processing status
     await updateJobStatus(jobId, "processing");
-    addSentryBreadcrumb("Job status updated to processing", { jobId }, "info");
+    addBreadcrumb({
+    category: "worker",
+    message: "Job status updated to processing",
+    data: { jobId },
+    level: "info",
+  });
 
     // Retry loop with exponential backoff
     let lastError: Error | null = null;
@@ -121,16 +93,22 @@ async function processJob(jobId: string): Promise<boolean> {
         const result = await performDeepAnalysis(job.inputHash, job.metadata);
 
         // Update job with success result
-        await updateJobStatus(jobId, "completed", result);
-        addSentryBreadcrumb("Job completed successfully", { jobId, attempt }, "info");
+        await updateJobStatus(jobId, "completed", { result });
+        addBreadcrumb({
+          category: "worker",
+          message: "Job completed successfully",
+          data: { jobId, attempt },
+          level: "info",
+        });
         return true;
       } catch (error) {
         lastError = error as Error;
-        addSentryBreadcrumb(
-          "Job attempt failed",
-          { jobId, attempt, error: lastError.message },
-          "warning"
-        );
+        addBreadcrumb({
+          category: "worker",
+          message: "Job attempt failed",
+          data: { jobId, attempt, error: lastError.message },
+          level: "warning",
+        });
 
         // If not the last attempt, wait with exponential backoff
         if (attempt < WORKER_CONFIG.maxRetries - 1) {
@@ -138,7 +116,7 @@ async function processJob(jobId: string): Promise<boolean> {
           console.log(`Retrying job ${jobId} in ${backoffMs}ms (attempt ${attempt + 1}/${WORKER_CONFIG.maxRetries})`);
 
           // Update retry metadata
-          await updateJobStatus(jobId, "processing", undefined, undefined);
+          await updateJobStatus(jobId, "processing", { attempts: attempt + 1, lastError: lastError.message, metadata: job.metadata });
           if (job.metadata) {
             job.metadata.retryAttempts = attempt + 1;
             job.metadata.lastError = lastError.message;
@@ -151,15 +129,16 @@ async function processJob(jobId: string): Promise<boolean> {
 
     // All retries exhausted - move to DLQ (failed status)
     const errorMessage = lastError?.message || "Unknown error after retries";
-    await updateJobStatus(jobId, "failed", undefined, errorMessage);
+    await updateJobStatus(jobId, "failed", { error: errorMessage });
 
-    addSentryBreadcrumb(
-      "Job moved to DLQ after retries exhausted",
-      { jobId, error: errorMessage },
-      "error"
-    );
+    addBreadcrumb({
+      category: "worker",
+      message: "Job moved to DLQ after retries exhausted",
+      data: { jobId, error: errorMessage },
+      level: "error",
+    });
 
-    reportErrorToSentry(
+    captureException(
       new Error(`Job ${jobId} failed after ${WORKER_CONFIG.maxRetries} retries: ${errorMessage}`),
       { jobId, inputHash: job.inputHash }
     );
@@ -167,12 +146,13 @@ async function processJob(jobId: string): Promise<boolean> {
     return false;
   } catch (error) {
     const err = error as Error;
-    addSentryBreadcrumb(
-      "Fatal error processing job",
-      { jobId, error: err.message },
-      "error"
-    );
-    reportErrorToSentry(err, { jobId });
+    addBreadcrumb({
+      category: "worker",
+      message: "Fatal error processing job",
+      data: { jobId, error: err.message },
+      level: "error",
+    });
+    captureException(err, { jobId });
     return false;
   }
 }
@@ -184,7 +164,11 @@ async function workerLoop(): Promise<void> {
   if (!isRunning) return;
 
   try {
-    addSentryBreadcrumb("Worker polling for jobs", {}, "info");
+    addBreadcrumb({
+      category: "worker",
+      message: "Worker polling for jobs",
+      level: "info",
+    });
 
     // Get next pending job
     const jobId = await getNextPendingJob();
@@ -194,12 +178,21 @@ async function workerLoop(): Promise<void> {
       await processJob(jobId);
     } else {
       // No jobs in queue
-      addSentryBreadcrumb("No pending jobs", {}, "info");
+      addBreadcrumb({
+        category: "worker",
+        message: "No pending jobs",
+        level: "info",
+      });
     }
   } catch (error) {
     const err = error as Error;
-    addSentryBreadcrumb("Worker loop error", { error: err.message }, "error");
-    reportErrorToSentry(err);
+    addBreadcrumb({
+      category: "worker",
+      message: "Worker loop error",
+      data: { error: err.message },
+      level: "error",
+    });
+    captureException(err);
   }
 }
 
@@ -214,7 +207,11 @@ export function startWorker(): void {
 
   console.log("Starting worker...");
   isRunning = true;
-  addSentryBreadcrumb("Worker started", {}, "info");
+  addBreadcrumb({
+    category: "worker",
+    message: "Worker started",
+    level: "info",
+  });
 
   // Start polling loop
   workerInterval = setInterval(workerLoop, WORKER_CONFIG.pollIntervalMs);
@@ -234,7 +231,11 @@ export function stopWorker(): void {
 
   console.log("Stopping worker...");
   isRunning = false;
-  addSentryBreadcrumb("Worker stopping", {}, "info");
+  addBreadcrumb({
+    category: "worker",
+    message: "Worker stopping",
+    level: "info",
+  });
 
   if (workerInterval) {
     clearInterval(workerInterval);

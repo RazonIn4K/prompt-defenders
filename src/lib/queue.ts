@@ -10,6 +10,7 @@
 
 import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
+import { addBreadcrumb } from "./monitoring";
 
 const QUEUE_PENDING_KEY = "queue:pending";
 const QUEUE_RETRY_KEY = "queue:retry";
@@ -92,7 +93,11 @@ export async function enqueueDeepAnalysis(
   const client = getRedisClient();
   if (!client) {
     console.warn("Queue not available - Upstash Redis not configured");
-    addQueueBreadcrumb("Queue unavailable - Redis not configured", {}, "warning");
+    addBreadcrumb({
+      category: "queue",
+      message: "Queue unavailable - Redis not configured",
+      level: "warning",
+    });
     return null;
   }
 
@@ -116,11 +121,21 @@ export async function enqueueDeepAnalysis(
     await client.lpush(QUEUE_PENDING_KEY, jobId);
 
     console.log(`✅ Enqueued job ${jobId} for deep analysis`);
-    addQueueBreadcrumb("Job enqueued", { jobId, inputLength }, "info");
+    addBreadcrumb({
+      category: "queue",
+      message: "Job enqueued",
+      data: { jobId, inputLength },
+      level: "info",
+    });
     return jobId;
   } catch (error) {
     console.error("Failed to enqueue job:", error);
-    addQueueBreadcrumb("Failed to enqueue job", { jobId, error: (error as Error).message }, "error");
+    addBreadcrumb({
+      category: "queue",
+      message: "Failed to enqueue job",
+      data: { jobId, error: (error as Error).message },
+      level: "error",
+    });
     return null;
   }
 }
@@ -139,7 +154,12 @@ export async function getJobStatus(jobId: string): Promise<QueueJob | null> {
   try {
     const data = await client.get<string>(`queue:job:${jobId}`);
     if (!data) {
-      addQueueBreadcrumb("Job not found", { jobId }, "warning");
+      addBreadcrumb({
+        category: "queue",
+        message: "Job not found",
+        data: { jobId },
+        level: "warning",
+      });
       return null;
     }
 
@@ -153,7 +173,12 @@ export async function getJobStatus(jobId: string): Promise<QueueJob | null> {
     return job;
   } catch (error) {
     console.error("Failed to get job status:", error);
-    addQueueBreadcrumb("Failed to get job status", { jobId, error: (error as Error).message }, "error");
+    addBreadcrumb({
+      category: "queue",
+      message: "Failed to get job status",
+      data: { jobId, error: (error as Error).message },
+      level: "error",
+    });
     return null;
   }
 }
@@ -178,7 +203,12 @@ export async function updateJobStatus(
     const existingData = await client.get<string>(`queue:job:${jobId}`);
     if (!existingData) {
       console.error(`Job ${jobId} not found`);
-      addQueueBreadcrumb("Job not found for update", { jobId }, "error");
+      addBreadcrumb({
+        category: "queue",
+        message: "Job not found for update",
+        data: { jobId },
+        level: "error",
+      });
       return false;
     }
 
@@ -212,11 +242,21 @@ export async function updateJobStatus(
     await client.setex(`queue:job:${jobId}`, JOB_TTL_SECONDS, JSON.stringify(job));
 
     console.log(`✅ Updated job ${jobId} status to ${status}`);
-    addQueueBreadcrumb("Job status updated", { jobId, status, hasError: !!error }, status === "failed" ? "error" : "info");
+    addBreadcrumb({
+      category: "queue",
+      message: "Job status updated",
+      data: { jobId, status, hasError: !!options.error },
+      level: status === "failed" ? "error" : "info",
+    });
     return true;
   } catch (error) {
     console.error("Failed to update job status:", error);
-    addQueueBreadcrumb("Failed to update job status", { jobId, error: (error as Error).message }, "error");
+    addBreadcrumb({
+      category: "queue",
+      message: "Failed to update job status",
+      data: { jobId, error: (error as Error).message },
+      level: "error",
+    });
     return false;
   }
 }
@@ -236,7 +276,12 @@ export async function getNextPendingJob(): Promise<string | null> {
     return jobId || null;
   } catch (error) {
     console.error("Failed to get next pending job:", error);
-    addQueueBreadcrumb("Failed to dequeue job", { error: (error as Error).message }, "error");
+    addBreadcrumb({
+      category: "queue",
+      message: "Failed to dequeue job",
+      data: { error: (error as Error).message },
+      level: "error",
+    });
     return null;
   }
 }
@@ -339,13 +384,23 @@ export async function performDeepAnalysis(
   inputHash: string,
   metadata?: Record<string, any>
 ): Promise<any> {
-  addQueueBreadcrumb("Starting deep analysis", { inputHash: inputHash.substring(0, 8) + "..." }, "info");
+  addBreadcrumb({
+    category: "queue",
+    message: "Starting deep analysis",
+    data: { inputHash: inputHash.substring(0, 8) + "..." },
+    level: "info",
+  });
 
   // TODO: Replace with actual LLM API call
   // For now, simulate processing delay
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  addQueueBreadcrumb("Deep analysis completed", { inputHash: inputHash.substring(0, 8) + "..." }, "info");
+  addBreadcrumb({
+    category: "queue",
+    message: "Deep analysis completed",
+    data: { inputHash: inputHash.substring(0, 8) + "..." },
+    level: "info",
+  });
 
   return {
     deepScore: 75,
