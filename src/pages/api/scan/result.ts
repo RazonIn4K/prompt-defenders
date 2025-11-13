@@ -8,7 +8,9 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authenticateRequest } from "../../../lib/auth";
+import { checkRateLimit } from "../../../lib/ratelimit";
 import { getJobStatus } from "../../../lib/queue";
+import { addBreadcrumb, captureException } from "../../../lib/monitoring";
 
 export default async function handler(
   req: NextApiRequest,
@@ -29,6 +31,25 @@ export default async function handler(
       });
     }
 
+    // Get client identifier (IP or forwarded IP)
+    const identifier =
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
+      req.socket.remoteAddress ||
+      "unknown";
+
+    // Check rate limit
+    const { success: rateLimitOk, remaining } = await checkRateLimit(identifier);
+
+    if (!rateLimitOk) {
+      res.setHeader("X-RateLimit-Remaining", remaining?.toString() || "0");
+      return res.status(429).json({
+        success: false,
+        error: "Rate limit exceeded. Please try again later.",
+      });
+    }
+
+    res.setHeader("X-RateLimit-Remaining", remaining?.toString() || "unknown");
+
     // Get queue ID from query
     const { id } = req.query;
 
@@ -43,11 +64,31 @@ export default async function handler(
     const job = await getJobStatus(id);
 
     if (!job) {
+      addBreadcrumb({
+        category: "api",
+        message: "Job not found or expired",
+        level: "warning",
+        data: {
+          endpoint: "/api/scan/result",
+          jobId: id,
+        },
+      });
       return res.status(404).json({
         success: false,
         error: "Job not found. It may have expired (24 hour TTL).",
       });
     }
+
+    addBreadcrumb({
+      category: "api",
+      message: "Job status queried",
+      level: "info",
+      data: {
+        endpoint: "/api/scan/result",
+        jobId: id,
+        status: job.status,
+      },
+    });
 
     // Return appropriate status based on job state
     switch (job.status) {
@@ -96,6 +137,16 @@ export default async function handler(
         });
 
       default:
+        addBreadcrumb({
+          category: "api",
+          message: "Unknown job status encountered",
+          level: "error",
+          data: {
+            endpoint: "/api/scan/result",
+            jobId: id,
+            status: job.status,
+          },
+        });
         return res.status(500).json({
           success: false,
           error: "Unknown job status",
@@ -103,6 +154,11 @@ export default async function handler(
     }
   } catch (error) {
     console.error("API error:", error);
+    captureException(error, {
+      endpoint: "/api/scan/result",
+      method: req.method,
+      jobId: typeof req.query.id === "string" ? req.query.id : undefined,
+    });
     return res.status(500).json({
       success: false,
       error: "Internal server error",

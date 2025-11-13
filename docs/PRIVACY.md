@@ -108,6 +108,7 @@ Key points:
 - TLS/HTTPS for all communications
 - Security headers (CSP, HSTS, etc.)
 - No sensitive data in logs
+- **Rate Limiting**: 10 requests per minute per IP. Note that if the rate limiter service is temporarily unavailable, requests are allowed to proceed (fail-open) to maintain service availability. This prioritizes uptime over strict rate enforcement during infrastructure issues.
 
 ## Children's Privacy
 
@@ -161,6 +162,6 @@ A: Not yet. Compliance certifications are on the roadmap for enterprise customer
 
 ---
 
-**Last Updated**: 2025-11-06
-**Version**: 1.0.0
+**Last Updated**: 2025-11-13
+**Version**: 1.1.0
 **Effective Date**: Upon deployment
