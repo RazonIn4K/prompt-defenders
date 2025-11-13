@@ -26,8 +26,9 @@ Prompt Defenders is a privacy-first prompt injection detection scanner. This doc
 - **Production**: Upstash Redis-based rate limiting
   - 10 requests per minute per IP
   - Sliding window algorithm
-- **Development**: Token bucket fallback
+- **Development**: Token bucket fallback (in-memory)
 - Rate limit headers included in responses
+- **Fail-Open Behavior**: If the rate limiter service is unavailable (e.g., Redis connection failure), requests are allowed to proceed rather than being rejected. This ensures service availability but reduces abuse protection during limiter outages. Monitor rate limiter health in production.
 
 ### 3. Security Headers
 
@@ -52,12 +53,18 @@ See `next.config.ts` for full CSP configuration.
 
 ### 5. Authentication & Authorization
 
-**Current State**: Public API endpoint (no auth required)
+**Current Implementation**:
+- **API Key Authentication**: Implemented via `X-API-Key` header
+  - **Production**: API key required (configured via `API_KEYS` environment variable)
+  - **Development**: Permissive mode (no key required for easier local development)
+  - Returns `401 Unauthorized` for missing or invalid keys in production
+- **Enforcement**: All API endpoints (`/api/scan`, `/api/scan/deep`, `/api/scan/result`) enforce authentication
+- **Rate Limiting**: Applied per IP address or forwarded IP (future: per API key)
 
-**TODO**: For production deployment with auth:
-- Implement API key authentication
-- Add rate limiting per API key
-- Implement user/tenant isolation
+**Future Enhancements**:
+- Per-API-key rate limiting quotas
+- Multi-tenant isolation with separate key namespaces
+- Request signing for enhanced security
 
 ### 6. Cryptography
 
@@ -103,19 +110,22 @@ Before submitting code:
 
 ## Known Limitations
 
-1. **No Authentication**: Current version has public API endpoint
-2. **In-Memory Rate Limiting**: Fallback not suitable for production at scale
-3. **Regex-Based Detection**: Not as robust as LLM-based analysis
-4. **No DDoS Protection**: Requires infrastructure-level protection
+1. **Deep Analysis Stub**: The `performDeepAnalysis` function is currently a placeholder that simulates LLM analysis with a 2-second delay. Real LLM integration is planned for future releases.
+2. **In-Memory Rate Limiting Fallback**: Token bucket fallback (used when Redis is unavailable) not suitable for production at scale due to per-instance state
+3. **Regex-Based Detection**: Fast scan uses regex patterns; deep analysis (when LLM is integrated) will provide more robust detection
+4. **Rate Limiter Fails Open**: Service availability prioritized over strict rate limiting during limiter outages
+5. **No DDoS Protection**: Requires infrastructure-level protection (e.g., CloudFlare, AWS Shield)
 
 ## Roadmap
 
-- [ ] Add API key authentication
-- [ ] Implement async LLM-based deep analysis
+- [x] Add API key authentication (Phase 2 - Completed)
+- [x] Implement async queue for LLM-based deep analysis (Phase 2 - Completed)
+- [ ] Integrate actual LLM API for deep analysis (currently stub)
 - [ ] Add request signing for API calls
+- [ ] Implement per-API-key rate limiting quotas
 - [ ] Implement CAPTCHA for public endpoints
 - [ ] Add Web Application Firewall (WAF) integration
-- [ ] Implement anomaly detection
+- [ ] Implement anomaly detection for abuse patterns
 
 ## Security Contacts
 
@@ -124,5 +134,5 @@ Before submitting code:
 
 ---
 
-**Last Updated**: 2025-11-06
-**Version**: 1.0.0
+**Last Updated**: 2025-11-13
+**Version**: 1.1.0

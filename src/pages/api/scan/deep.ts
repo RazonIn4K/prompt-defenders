@@ -11,6 +11,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { authenticateRequest } from "../../../lib/auth";
 import { checkRateLimit } from "../../../lib/ratelimit";
 import { enqueueDeepAnalysis } from "../../../lib/queue";
+import { addBreadcrumb, captureException } from "../../../lib/monitoring";
 
 export default async function handler(
   req: NextApiRequest,
@@ -71,11 +72,28 @@ export default async function handler(
     const queueId = await enqueueDeepAnalysis(inputHash, inputLength, metadata);
 
     if (!queueId) {
+      addBreadcrumb({
+        category: "api",
+        message: "Queue service unavailable",
+        level: "error",
+        data: { endpoint: "/api/scan/deep" },
+      });
       return res.status(503).json({
         success: false,
         error: "Queue service unavailable. Please try again later.",
       });
     }
+
+    addBreadcrumb({
+      category: "api",
+      message: "Deep analysis job enqueued successfully",
+      level: "info",
+      data: {
+        endpoint: "/api/scan/deep",
+        queueId,
+        inputLength,
+      },
+    });
 
     // Return queue ID for polling
     return res.status(202).json({
@@ -87,6 +105,10 @@ export default async function handler(
     });
   } catch (error) {
     console.error("API error:", error);
+    captureException(error, {
+      endpoint: "/api/scan/deep",
+      method: req.method,
+    });
     return res.status(500).json({
       success: false,
       error: "Internal server error",

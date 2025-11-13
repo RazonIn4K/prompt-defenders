@@ -192,7 +192,8 @@ Scan text for prompt injection patterns (fast regex-based analysis).
 **Rate Limits:**
 - 10 requests per minute per IP
 - Returns `429` when exceeded
-- `X-RateLimit-Remaining` header included
+- `X-RateLimit-Remaining` header included in all responses
+- **Note**: If rate limiter service (Upstash Redis) is unavailable, requests fail open (are allowed) to maintain service availability
 
 **Schema:** See [public/api/scanner/schema.json](./public/api/scanner/schema.json)
 
@@ -222,13 +223,19 @@ Enqueue async deep analysis (LLM-based).
 }
 ```
 
+**Rate Limits:** Same as `/api/scan` (10 req/min per IP)
+
 **Privacy Note:** Only the input hash is stored, never the raw text.
+
+**Note:** Deep analysis currently uses a placeholder LLM stub. Real LLM integration planned for future releases.
 
 ---
 
 ### GET /api/scan/result?id=<queueId>
 
 Fetch async deep analysis result.
+
+**Rate Limits:** Same as `/api/scan` (10 req/min per IP)
 
 **Response (pending/processing):**
 ```json

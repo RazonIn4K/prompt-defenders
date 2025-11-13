@@ -3,6 +3,7 @@ import { authenticateRequest } from "../../lib/auth";
 import { checkRateLimit } from "../../lib/ratelimit";
 import { scanInput } from "../../lib/scanner";
 import { enqueueDeepAnalysis } from "../../lib/queue";
+import { captureException } from "../../lib/monitoring";
 
 export default async function handler(
   req: NextApiRequest,
@@ -90,6 +91,10 @@ export default async function handler(
     });
   } catch (error) {
     console.error("API error:", error);
+    captureException(error, {
+      endpoint: "/api/scan",
+      method: req.method,
+    });
     return res.status(500).json({
       success: false,
       error: "Internal server error",
