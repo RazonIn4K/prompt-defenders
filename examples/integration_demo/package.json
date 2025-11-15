@@ -1,0 +1,15 @@
+{
+  "name": "prompt-defenders-integration-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx tsx server.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1",
+    "typescript": "^5.9.3"
+  }
+}

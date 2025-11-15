@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Prompt injection defense scanner with security middleware",
   "private": true,
+  "bin": {
+    "prompt-defender": "./bin/prompt-defender.mjs",
+    "promptdefenders": "./bin/prompt-defender.mjs"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -31,13 +35,13 @@
     "next": "^16.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "tsx": "^4.19.1",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.0.1",
-    "tsx": "^4.19.1",
     "vitest": "^2.1.8"
   }
 }

@@ -1,138 +1,33 @@
-# Security Policy
+# Prompt Defenders Security Usage Guide
 
-## Overview
+## Purpose
+Prompt Defenders is a preflight scanner for prompt injection detection. It is designed to run **before** user text reaches privileged LLM contexts so that risky content can be blocked, quarantined, or routed for manual review.
 
-Prompt Defenders is a privacy-first prompt injection detection scanner. This document outlines our security practices and policies.
+## Recommended Deployment Model
+1. **Inline guardrail** – Call `scanInput()` (Node) or invoke the CLI (`promptdefenders scan -`) within your API, chatbot gateway, or workflow orchestrator before invoking any LLM.
+2. **Severity thresholds** – Treat `score >= 50` ("high") as a hard block and `score >= 80` ("critical") as a block plus alert. Log `analysis.advisories` for your SOC.
+3. **Immutable logging** – Store only the `meta.inputHash` plus advisories for auditing; never persist raw prompts unless your privacy policy allows it.
+4. **Feedback loop** – When you block a prompt, return a safe remediation hint to the end user so they understand why the request was denied.
 
-## Security Principles
+## Limitations
+- The shipped rule pack is regex-based and cannot catch every obfuscated payload, image-based attack, or multi-turn exploit.
+- The scanner runs synchronously and expects UTF-8 text. Binary attachments, audio transcripts, or streaming partials must be normalized upstream.
+- It does not provide downstream policy enforcement—if an attacker reaches your LLM through another channel, you still need sandboxing and output filters.
+- Deep analysis (LLM-assisted triage) is intentionally out-of-band to protect latency-sensitive conversations.
 
-1. **Defense in Depth**: Multiple layers of security controls
-2. **Least Privilege**: Minimal permissions and access
-3. **Secure by Default**: Security controls enabled out of the box
-4. **Privacy First**: No raw user input storage
-5. **Fail Secure**: Errors fail in a secure state
+## Complementary Controls
+- **Network layer**: Rate limiting, IP reputation, and WAF rules to cut down opportunistic traffic before it hits Prompt Defenders.
+- **Application layer**: Authentication, role-based access, and strict separation between system prompts and user content.
+- **Observability**: Pipe advisories into your SIEM/alerting platform so clusters of similar attacks can be investigated.
+- **Human-in-the-loop**: For critical workflows (payments, admin actions), route blocked prompts to a security analyst before discarding them entirely.
 
-## Security Controls
+## Client Project Checklist
+- [ ] All user prompts scan through Prompt Defenders prior to LLM calls.
+- [ ] Severity thresholds documented in runbooks and unit tests (see `tests/cli.test.ts`).
+- [ ] Alerts wired to engineering/SOC channels for `critical` detections.
+- [ ] Complementary rate limiting and authentication active in production.
+- [ ] Periodic rule-pack updates via the repository's governance scripts.
 
-### 1. Input Validation
+Prompt Defenders is most effective when treated as part of a layered defense strategy—pair it with output filtering, least-privilege tool access, and active monitoring to deliver a premium "Prompt Injection Audit + Remediation" service for your clients.
 
-- All API inputs validated before processing
-- Maximum input size: 100KB
-- Input sanitization for regex processing
-- HMAC hashing for correlation (not storage)
-
-### 2. Rate Limiting
-
-- **Production**: Upstash Redis-based rate limiting
-  - 10 requests per minute per IP
-  - Sliding window algorithm
-- **Development**: Token bucket fallback (in-memory)
-- Rate limit headers included in responses
-- **Fail-Open Behavior**: If the rate limiter service is unavailable (e.g., Redis connection failure), requests are allowed to proceed rather than being rejected. This ensures service availability but reduces abuse protection during limiter outages. Monitor rate limiter health in production.
-
-### 3. Security Headers
-
-All responses include comprehensive security headers:
-
-- **Content-Security-Policy**: Restricts resource loading
-- **Strict-Transport-Security**: Enforces HTTPS
-- **X-Frame-Options**: Prevents clickjacking
-- **X-Content-Type-Options**: Prevents MIME sniffing
-- **X-XSS-Protection**: Legacy XSS protection
-- **Referrer-Policy**: Limits referrer information
-- **Permissions-Policy**: Restricts browser features
-
-See `next.config.ts` for full CSP configuration.
-
-### 4. Data Handling
-
-- **Input Data**: HMAC-hashed in memory only, never stored
-- **Hash Salt**: Configured via `HASH_SALT` environment variable
-- **Correlation**: Hashes used only for telemetry correlation
-- **Retention**: No persistent storage of user inputs
-
-### 5. Authentication & Authorization
-
-**Current Implementation**:
-- **API Key Authentication**: Implemented via `X-API-Key` header
-  - **Production**: API key required (configured via `API_KEYS` environment variable)
-  - **Development**: Permissive mode (no key required for easier local development)
-  - Returns `401 Unauthorized` for missing or invalid keys in production
-- **Enforcement**: All API endpoints (`/api/scan`, `/api/scan/deep`, `/api/scan/result`) enforce authentication
-- **Rate Limiting**: Applied per IP address or forwarded IP (future: per API key)
-
-**Future Enhancements**:
-- Per-API-key rate limiting quotas
-- Multi-tenant isolation with separate key namespaces
-- Request signing for enhanced security
-
-### 6. Cryptography
-
-- HMAC-SHA256 for input hashing
-- Configurable salt via environment variable
-- Never log or expose hashes publicly
-
-### 7. Dependency Security
-
-- Automated SBOM generation with Syft
-- Vulnerability scanning with Grype
-- CI fails on high/critical vulnerabilities
-- Regular dependency updates
-
-### 8. Code Security
-
-- CodeQL static analysis on all commits
-- TypeScript for type safety
-- ESLint for code quality
-- Strict React mode enabled
-
-## Reporting Security Issues
-
-**DO NOT** create public GitHub issues for security vulnerabilities.
-
-Instead, please report security issues to:
-- **Email**: security@promptdefenders.com (set up if going to production)
-- **GitHub Security Advisories**: Use "Report a vulnerability" button
-
-We aim to respond to security reports within 48 hours.
-
-## Security Checklist for Contributors
-
-Before submitting code:
-
-- [ ] No secrets in code (use environment variables)
-- [ ] Input validation on all user inputs
-- [ ] No use of dangerous functions (eval, Function constructor)
-- [ ] Dependencies up to date
-- [ ] Tests passing
-- [ ] Linting passing
-- [ ] Security headers configured
-
-## Known Limitations
-
-1. **Deep Analysis Stub**: The `performDeepAnalysis` function is currently a placeholder that simulates LLM analysis with a 2-second delay. Real LLM integration is planned for future releases.
-2. **In-Memory Rate Limiting Fallback**: Token bucket fallback (used when Redis is unavailable) not suitable for production at scale due to per-instance state
-3. **Regex-Based Detection**: Fast scan uses regex patterns; deep analysis (when LLM is integrated) will provide more robust detection
-4. **Rate Limiter Fails Open**: Service availability prioritized over strict rate limiting during limiter outages
-5. **No DDoS Protection**: Requires infrastructure-level protection (e.g., CloudFlare, AWS Shield)
-
-## Roadmap
-
-- [x] Add API key authentication (Phase 2 - Completed)
-- [x] Implement async queue for LLM-based deep analysis (Phase 2 - Completed)
-- [ ] Integrate actual LLM API for deep analysis (currently stub)
-- [ ] Add request signing for API calls
-- [ ] Implement per-API-key rate limiting quotas
-- [ ] Implement CAPTCHA for public endpoints
-- [ ] Add Web Application Firewall (WAF) integration
-- [ ] Implement anomaly detection for abuse patterns
-
-## Security Contacts
-
-- **Security Lead**: [To be assigned]
-- **Engineering Lead**: [To be assigned]
-
----
-
-**Last Updated**: 2025-11-13
-**Version**: 1.1.0
+For engineers wanting deeper implementation notes (rule pack governance, roadmap, and mitigation internals), see [docs/technical_deep_dive.md](./technical_deep_dive.md).

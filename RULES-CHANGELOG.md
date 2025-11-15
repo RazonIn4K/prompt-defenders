@@ -14,6 +14,15 @@ All rule changes must include a version bump and a changelog entry describing th
 
 ---
 
+## v1.0.1 - 2025-11-07
+
+- **Modified** Rule PI-001: Expanded regex to catch "all/any previous" permutations and synonyms so multi-word override attempts are blocked.
+- **Modified** Rule PI-002: Added tolerance for filler words between leak verbs and pronouns (e.g., "Show me your...") to mirror public jailbreak phrasing.
+
+**Rationale**: Align coverage with real-world jailbreak transcripts referenced in the CLI test suite.
+
+---
+
 ## v1.0.0 - 2025-11-06
 
 **Initial Release**

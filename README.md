@@ -120,6 +120,131 @@ npm run build
 npm start
 ```
 
+## How to Run a Quick Audit on Your Chatbot Prompts
+
+The new CLI makes it easy to demo a guardrail scan in seconds:
+
+1. Drop a prompt into a text file (reuse the samples under [`examples/`](./examples)).
+2. Run the scanner locally:
+
+   ```bash
+   npx prompt-defender scan examples/injection_simple.txt --rules basic
+   ```
+
+3. Show the JSON report to stakeholders:
+
+   ```json
+   {
+     "risk_score": 75,
+     "issues": [
+       {
+         "rule_id": "PI-001",
+         "description": "Direct instruction override attempts",
+         "severity": "high",
+         "rationale": "Common pattern in prompt injection attacks attempting to override system instructions"
+       },
+       {
+         "rule_id": "PI-002",
+         "description": "System prompt extraction",
+         "severity": "critical",
+         "rationale": "Attempts to extract system prompts are critical security concerns"
+       }
+     ],
+     "suggested_mitigations": [
+       "Route risky prompts through this scanner before each LLM call.",
+       "Log hashed prompts for auditing without storing raw customer data.",
+       "Reinforce system prompts server-side so user overrides are ignored.",
+       "Strip override keywords (ignore/disregard/forget) before forwarding to the LLM.",
+       "Never echo internal system prompts—respond with a redacted message instead.",
+       "Split privileged instructions into separate, non-user-accessible channels.",
+       "Block the message, alert an operator, and request the user to restate goals safely."
+     ]
+   }
+   ```
+
+> Tip: Pipe live chat transcripts into `promptdefenders scan -` to capture attacks during a security review without writing to disk.
+
+### Rule Coverage & Risk Categories
+
+Our Vitest suite exercises the highest-risk rule families so you can cite concrete evidence during audits:
+
+- **Instruction override (PI-001, High)** – "Ignore all previous instructions" payloads get flagged with remediation steps to reassert system prompts.
+- **System prompt extraction (PI-002, Critical)** – Any attempt to leak onboarding/system guidance triggers a stop and mitigation such as redaction.
+- **Developer-mode / unrestricted switches (PI-006, PI-007, Critical)** – Public jailbreak patterns (e.g., generalized Do-Anything-Now requests) are covered and will halt execution before the LLM sees them.
+- **Bypass + SQL-style payloads (PI-008/PI-009, High/Critical)** – Complex prompts in `examples/injection_complex.txt` demonstrate how stacked attempts map to higher risk scores.
+
+All categories above have dedicated regression tests under [`tests/cli.test.ts`](./tests/cli.test.ts) to prove that the shipped rule pack is effective against real-world prompts. For a deeper explanation of scanner mechanics and roadmap considerations, read [docs/technical_deep_dive.md](./docs/technical_deep_dive.md).
+
+### Integration Examples
+
+Using the scanner inside your pipeline keeps risky prompts away from production models.
+
+#### Node + Express middleware
+
+```ts
+import express from "express";
+import { scanInput } from "./src/lib/scanner"; // adjust path if consuming as a package
+
+const app = express();
+app.use(express.json());
+
+app.post("/chat", async (req, res) => {
+  const prompt = String(req.body?.prompt ?? "");
+  const scan = scanInput(prompt);
+  if (!scan.success) {
+    return res.status(500).json({ error: scan.error ?? "scan_failed" });
+  }
+
+  if (scan.analysis.score >= 50) {
+    return res.status(422).json({
+      message: "Prompt blocked by Prompt Defenders",
+      advisories: scan.analysis.advisories,
+    });
+  }
+
+  const llmResponse = await callYourLLM(prompt); // your own LLM adapter
+  return res.json({ reply: llmResponse, scan });
+});
+
+app.listen(3000);
+```
+
+For deployment guidance and layered-control suggestions, see [docs/security.md](./docs/security.md).
+
+#### FastAPI + CLI bridge
+
+```py
+import json
+import subprocess
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Prompt(BaseModel):
+    text: str
+
+def run_prompt_defender(prompt: str) -> dict:
+    proc = subprocess.run(
+        ["npx", "prompt-defender", "scan", "-"],
+        input=prompt.encode("utf-8"),
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=proc.stderr.decode())
+    return json.loads(proc.stdout)
+
+@app.post("/chat")
+def chat(prompt: Prompt):
+    report = run_prompt_defender(prompt.text)
+    if report["risk_score"] >= 50:
+        raise HTTPException(status_code=422, detail=report["issues"])
+    # call your LLM safely once cleared
+    llm_reply = call_llm(prompt.text)
+    return {"reply": llm_reply, "scan": report}
+```
+
 ## API Documentation
 
 ### Authentication (Production Only)
