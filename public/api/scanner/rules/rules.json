@@ -1,20 +1,20 @@
 {
-  "version": "1.0.0",
-  "updated": "2025-11-06",
+  "version": "1.0.1",
+  "updated": "2025-11-07",
   "description": "Prompt injection detection rule pack",
   "rules": [
     {
       "id": "PI-001",
       "description": "Direct instruction override attempts",
       "severity": "high",
-      "pattern": "(ignore|disregard|forget)\\s+(previous|all|above|prior)\\s+(instructions|commands|rules|directives)",
+      "pattern": "(ignore|disregard|forget)\\s+(?:(?:all|any)\\s+)?(previous|prior|above|existing|earlier)\\s+(instructions|commands|rules|directives)",
       "rationale": "Common pattern in prompt injection attacks attempting to override system instructions"
     },
     {
       "id": "PI-002",
       "description": "System prompt extraction",
       "severity": "critical",
-      "pattern": "(show|reveal|display|print|output)\\s+(your|the)\\s+(system|original|initial)\\s+(prompt|instructions)",
+      "pattern": "(show|reveal|display|print|output)(?:\\s+\\w+){0,2}?\\s+(your|the)(?:\\s+(?:system|original|initial)){1,2}\\s+(prompt|instructions)",
       "rationale": "Attempts to extract system prompts are critical security concerns"
     },
     {
