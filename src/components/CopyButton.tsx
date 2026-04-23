@@ -13,6 +13,10 @@ interface CopyButtonProps {
 
 export default function CopyButton({ data, label = "Copy JSON" }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+  const baseBackground = copied ? "rgba(34, 197, 94, 0.16)" : "rgba(9, 20, 34, 0.88)";
+  const hoverBackground = copied ? "rgba(34, 197, 94, 0.22)" : "rgba(11, 29, 48, 0.92)";
+  const borderColor = copied ? "rgba(34, 197, 94, 0.32)" : "rgba(125, 211, 252, 0.18)";
+  const textColor = copied ? "#bbf7d0" : "rgba(226, 236, 248, 0.92)";
 
   const handleCopy = async () => {
     try {
@@ -28,30 +32,27 @@ export default function CopyButton({ data, label = "Copy JSON" }: CopyButtonProp
   return (
     <button
       onClick={handleCopy}
+      type="button"
       style={{
         padding: "8px 16px",
-        backgroundColor: copied ? "#22c55e" : "#3b82f6",
-        color: "white",
-        border: "none",
-        borderRadius: "6px",
+        backgroundColor: baseBackground,
+        color: textColor,
+        border: `1px solid ${borderColor}`,
+        borderRadius: "999px",
         fontWeight: 600,
         fontSize: "14px",
         cursor: "pointer",
         transition: "all 0.2s",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
       }}
       onMouseEnter={(e) => {
-        if (!copied) {
-          e.currentTarget.style.backgroundColor = "#2563eb";
-        }
+        e.currentTarget.style.backgroundColor = hoverBackground;
       }}
       onMouseLeave={(e) => {
-        if (!copied) {
-          e.currentTarget.style.backgroundColor = "#3b82f6";
-        }
+        e.currentTarget.style.backgroundColor = baseBackground;
       }}
     >
-      {copied ? "✓ Copied!" : label}
+      {copied ? "Copied" : label}
     </button>
   );
 }

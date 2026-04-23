@@ -18,27 +18,27 @@ interface StatusBadgeProps {
 const severityConfig = {
   low: {
     label: "Low",
-    color: "#22c55e",
-    bgColor: "#f0fdf4",
-    borderColor: "#86efac",
+    color: "#86efac",
+    bgColor: "rgba(34, 197, 94, 0.14)",
+    borderColor: "rgba(34, 197, 94, 0.32)",
   },
   medium: {
     label: "Medium",
-    color: "#eab308",
-    bgColor: "#fefce8",
-    borderColor: "#fde047",
+    color: "#fde047",
+    bgColor: "rgba(234, 179, 8, 0.14)",
+    borderColor: "rgba(234, 179, 8, 0.3)",
   },
   high: {
     label: "High",
-    color: "#f97316",
-    bgColor: "#fff7ed",
-    borderColor: "#fdba74",
+    color: "#fdba74",
+    bgColor: "rgba(249, 115, 22, 0.14)",
+    borderColor: "rgba(249, 115, 22, 0.3)",
   },
   critical: {
     label: "Critical",
-    color: "#ef4444",
-    bgColor: "#fef2f2",
-    borderColor: "#fca5a5",
+    color: "#fca5a5",
+    bgColor: "rgba(239, 68, 68, 0.14)",
+    borderColor: "rgba(239, 68, 68, 0.34)",
   },
 };
 
@@ -52,12 +52,13 @@ export default function StatusBadge({ severity, score }: StatusBadgeProps) {
         alignItems: "center",
         gap: "8px",
         padding: "6px 12px",
-        borderRadius: "6px",
+        borderRadius: "999px",
         backgroundColor: config.bgColor,
-        border: `2px solid ${config.borderColor}`,
+        border: `1px solid ${config.borderColor}`,
         fontWeight: 600,
         fontSize: "14px",
         color: config.color,
+        backdropFilter: "blur(10px)",
       }}
     >
       <span

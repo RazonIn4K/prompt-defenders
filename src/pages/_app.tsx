@@ -28,11 +28,11 @@ export default function App({ Component, pageProps }: AppProps) {
 
       datadogRum.startSessionReplayRecording();
 
-      console.log("✅ Datadog RUM initialized (L5 Analytics)");
-    } else {
-      console.warn(
-        "⚠️  Datadog RUM not initialized. Set NEXT_PUBLIC_DD_APP_ID and NEXT_PUBLIC_DD_CLIENT_TOKEN."
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Datadog RUM initialized");
+      }
+    } else if (process.env.NODE_ENV !== "production") {
+      console.warn("Datadog RUM not initialized. Missing public app ID or client token.");
     }
   }, []);
 
