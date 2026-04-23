@@ -1,6 +1,6 @@
 {
-  "version": "1.0.1",
-  "updated": "2025-11-07",
+  "version": "1.0.2",
+  "updated": "2026-04-23",
   "description": "Prompt injection detection rule pack",
   "rules": [
     {
@@ -72,6 +72,20 @@
       "severity": "low",
       "pattern": "(\\b\\w+\\b)(?:\\s+\\1){9,}",
       "rationale": "Excessive repetition may attempt to confuse or overflow filters"
+    },
+    {
+      "id": "PI-011",
+      "description": "Tool misuse or unauthorized side effects",
+      "severity": "high",
+      "pattern": "(use|run|execute|trigger|call)\\s+(?:(?:every|all|available)\\s+){0,3}(?:tool|tools|function|functions|command|commands)",
+      "rationale": "Attempts to force tool execution or side effects should require explicit operator approval"
+    },
+    {
+      "id": "PI-012",
+      "description": "Credential or secret phishing",
+      "severity": "critical",
+      "pattern": "(ask|request|collect|send|share|reveal)\\s+(?:the\\s+)?(?:operator|user|customer|admin|person|me)?(?:\\s+\\w+){0,6}\\s+(password|passcode|one-time code|otp|reset code|api key|secret|token|credentials?)",
+      "rationale": "Requests for credentials, reset codes, tokens, or secrets are critical social-engineering indicators"
     }
   ]
 }
