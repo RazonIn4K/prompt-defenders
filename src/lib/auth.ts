@@ -3,8 +3,8 @@
  *
  * Optional authentication for production environments
  * - Validates X-API-Key header against environment variable list
- * - Enforced in production, permissive in development
- * - Returns 401 on missing/invalid key in prod
+ * - Allows same-origin hosted form requests without exposing a browser API key
+ * - Enforced for direct external API calls in production
  */
 
 export interface AuthResult {
@@ -15,9 +15,13 @@ export interface AuthResult {
 /**
  * Validate API key from request header
  * @param apiKey - API key from X-API-Key header
+ * @param headers - Request headers used to validate same-origin browser requests
  * @returns Authentication result
  */
-export function validateApiKey(apiKey: string | undefined): AuthResult {
+export function validateApiKey(
+  apiKey: string | undefined,
+  headers: Record<string, string | string[] | undefined> = {}
+): AuthResult {
   const env = process.env.NODE_ENV || "development";
   const isProd = env === "production";
 
@@ -27,7 +31,11 @@ export function validateApiKey(apiKey: string | undefined): AuthResult {
     return { authenticated: true };
   }
 
-  // In production, require API key
+  if (isSameOriginRequest(headers)) {
+    return { authenticated: true };
+  }
+
+  // In production, require API key for external API calls
   const apiKeysEnv = process.env.API_KEYS;
 
   if (!apiKeysEnv) {
@@ -98,6 +106,47 @@ export function getApiKeyFromHeaders(
   return apiKey;
 }
 
+function getHeader(
+  headers: Record<string, string | string[] | undefined>,
+  name: string
+): string | undefined {
+  const direct = headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()];
+  const value = Array.isArray(direct) ? direct[0] : direct;
+  return value?.split(",")[0]?.trim();
+}
+
+function getHostFromUrl(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    return new URL(value).host.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
+export function isSameOriginRequest(
+  headers: Record<string, string | string[] | undefined>
+): boolean {
+  const requestHost = (
+    getHeader(headers, "x-forwarded-host") || getHeader(headers, "host")
+  )?.toLowerCase();
+
+  if (!requestHost) {
+    return false;
+  }
+
+  const originHost = getHostFromUrl(getHeader(headers, "origin"));
+  if (originHost === requestHost) {
+    return true;
+  }
+
+  const refererHost = getHostFromUrl(getHeader(headers, "referer"));
+  return refererHost === requestHost;
+}
+
 /**
  * Middleware helper to validate API key from request
  * @param headers - Request headers
@@ -107,5 +156,5 @@ export function authenticateRequest(
   headers: Record<string, string | string[] | undefined>
 ): AuthResult {
   const apiKey = getApiKeyFromHeaders(headers);
-  return validateApiKey(apiKey);
+  return validateApiKey(apiKey, headers);
 }

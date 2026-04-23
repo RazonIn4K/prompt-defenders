@@ -79,7 +79,7 @@ const coverageAreas = [
 ];
 
 const workflowSteps = [
-  "Send prompt text to /api/scan from a form, CI job, or middleware.",
+  "Use the hosted form directly, or send authenticated requests from CI and middleware.",
   "Review score, severity, and concrete advisories tied to rule IDs.",
   "Use deep analysis for longer queues or richer async follow-up.",
 ];
@@ -304,6 +304,7 @@ export default function Home() {
                 <pre className={styles.codeBlock}>
 {`curl -X POST /api/scan \\
   -H "Content-Type: application/json" \\
+  -H "X-API-Key: $PROMPT_DEFENDERS_API_KEY" \\
   -d '{"input":"<prompt>","deepAnalysis":true}'`}
                 </pre>
               </div>

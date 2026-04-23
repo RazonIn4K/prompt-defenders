@@ -2,6 +2,7 @@ import { describe, expect, test, beforeEach, afterAll, vi } from "vitest";
 import {
   authenticateRequest,
   getApiKeyFromHeaders,
+  isSameOriginRequest,
   validateApiKey,
 } from "../src/lib/auth";
 
@@ -31,13 +32,25 @@ describe("validateApiKey", () => {
     expect(result).toEqual({ authenticated: true });
   });
 
-  test("rejects when API_KEYS missing in production", () => {
+  test("rejects direct external requests when API_KEYS missing in production", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("API_KEYS", "");
 
     const result = validateApiKey(undefined);
     expect(result.authenticated).toBe(false);
     expect(result.reason).toBe("API authentication not configured");
+  });
+
+  test("allows same-origin hosted form requests in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("API_KEYS", "");
+
+    const result = validateApiKey(undefined, {
+      host: "prompt-defenders.vercel.app",
+      origin: "https://prompt-defenders.vercel.app",
+    });
+
+    expect(result.authenticated).toBe(true);
   });
 
   test("authenticates when key matches configured set", () => {
@@ -67,6 +80,35 @@ describe("getApiKeyFromHeaders", () => {
   test("detects case-insensitive header names", () => {
     const key = getApiKeyFromHeaders({ "X-Api-Key": "mixed" });
     expect(key).toBe("mixed");
+  });
+});
+
+describe("isSameOriginRequest", () => {
+  test("matches origin against forwarded host", () => {
+    const result = isSameOriginRequest({
+      "x-forwarded-host": "prompt-defenders.vercel.app",
+      origin: "https://prompt-defenders.vercel.app",
+    });
+
+    expect(result).toBe(true);
+  });
+
+  test("matches referer when origin is absent", () => {
+    const result = isSameOriginRequest({
+      host: "prompt-defenders.vercel.app",
+      referer: "https://prompt-defenders.vercel.app/",
+    });
+
+    expect(result).toBe(true);
+  });
+
+  test("rejects cross-origin requests", () => {
+    const result = isSameOriginRequest({
+      host: "prompt-defenders.vercel.app",
+      origin: "https://example.com",
+    });
+
+    expect(result).toBe(false);
   });
 });
 
