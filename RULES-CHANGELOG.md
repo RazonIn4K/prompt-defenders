@@ -14,6 +14,15 @@ All rule changes must include a version bump and a changelog entry describing th
 
 ---
 
+## v1.0.2 - 2026-04-23
+
+- **Added** Rule PI-011: Tool misuse or unauthorized side effects (high) — flags prompts that try to force tool, function, or command execution without operator approval.
+- **Added** Rule PI-012: Credential or secret phishing (critical) — flags requests for passwords, reset codes, OTPs, API keys, tokens, or other credentials.
+
+**Rationale**: Extend coverage to tool-forcing and credential-phishing vectors surfaced while expanding the scanner demo corpus. (Backfilled entry: this version shipped in commit `fff7e80` directly on main, bypassing the PR-only changelog check; recorded here to restore the audit trail.)
+
+---
+
 ## v1.0.1 - 2025-11-07
 
 - **Modified** Rule PI-001: Expanded regex to catch "all/any previous" permutations and synonyms so multi-word override attempts are blocked.

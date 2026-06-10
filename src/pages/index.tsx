@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import StatusBadge from "../components/StatusBadge";
 import CopyButton from "../components/CopyButton";
 import styles from "./index.module.css";
@@ -219,6 +220,7 @@ export default function Home() {
                   findings rather than a compliance guarantee.
                 </p>
                 <div className={styles.inlineLinks}>
+                  <Link href="/rules">Rule pack explorer</Link>
                   {docsLinks.map((link) => (
                     <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
                       {link.label}

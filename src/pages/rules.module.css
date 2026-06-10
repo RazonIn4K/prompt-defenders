@@ -1,0 +1,336 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.16), transparent 28%),
+    radial-gradient(circle at 85% 12%, rgba(34, 211, 238, 0.12), transparent 22%),
+    linear-gradient(180deg, #07111d 0%, #081522 45%, #0b1422 100%);
+  color: #e5eefb;
+}
+
+.heroGlow {
+  position: absolute;
+  top: -6rem;
+  left: -4rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.6;
+  pointer-events: none;
+  background: rgba(59, 130, 246, 0.28);
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.hero {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem 0 0.5rem;
+}
+
+.eyebrow,
+.sectionLabel {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.title {
+  margin: 0;
+  max-width: 20ch;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1.02;
+  color: #f8fbff;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 62rem;
+  font-size: clamp(1rem, 1.9vw, 1.2rem);
+  line-height: 1.7;
+  color: rgba(226, 236, 248, 0.76);
+}
+
+.signalRow,
+.inlineLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.signalPill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(8, 21, 34, 0.72);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  color: rgba(230, 240, 250, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.inlineLinks a {
+  color: #7dd3fc;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.inlineLinks a:hover {
+  color: #bae6fd;
+}
+
+.card,
+.rulesSection {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(6, 18, 31, 0.82);
+  border-radius: 24px;
+  box-shadow:
+    0 20px 80px rgba(2, 6, 23, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  padding: 1.5rem;
+}
+
+.cardTitle {
+  margin: 0.45rem 0 0;
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  line-height: 1.2;
+  color: #f8fbff;
+}
+
+.cardCopy {
+  margin: 0.75rem 0 0;
+  max-width: 56rem;
+  color: rgba(216, 228, 241, 0.78);
+  line-height: 1.65;
+}
+
+.cardCopy a {
+  color: #7dd3fc;
+  text-decoration: none;
+}
+
+.cardCopy a:hover {
+  color: #bae6fd;
+}
+
+.scoringGrid {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}
+
+.weightList,
+.bandList {
+  margin: 1.1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.weightRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(10, 25, 39, 0.86);
+  padding: 0.7rem 1rem;
+}
+
+.weightValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fbff;
+}
+
+.bandRow {
+  display: grid;
+  grid-template-columns: 6rem auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(10, 25, 39, 0.86);
+  padding: 0.7rem 1rem;
+}
+
+.bandRange {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  color: #f8fbff;
+  white-space: nowrap;
+}
+
+.bandMeaning {
+  color: rgba(216, 228, 241, 0.78);
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.ruleGrid {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.ruleCard {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  background: rgba(10, 25, 39, 0.86);
+  padding: 1.1rem;
+}
+
+.ruleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ruleId {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #7dd3fc;
+}
+
+.ruleName {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: #f8fbff;
+}
+
+.ruleRationale {
+  margin: 0;
+  color: rgba(216, 228, 241, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.patternDetails summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(125, 211, 252, 0.85);
+}
+
+.patternDetails summary:hover {
+  color: #bae6fd;
+}
+
+.patternBlock {
+  margin: 0.6rem 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: rgba(4, 12, 22, 0.86);
+  padding: 0.8rem;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #bfdbfe;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.governanceList {
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.6rem;
+  color: rgba(216, 228, 241, 0.82);
+  line-height: 1.6;
+}
+
+.governanceList code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+  color: #bfdbfe;
+}
+
+.historyList {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.historyEntry {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  background: rgba(10, 25, 39, 0.86);
+  padding: 1.1rem;
+}
+
+.historyHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+}
+
+.historyVersion {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #7dd3fc;
+}
+
+.historyDate {
+  font-size: 0.9rem;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.historyChanges {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+  color: rgba(216, 228, 241, 0.82);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.historyNote {
+  margin: 0.75rem 0 0;
+  color: rgba(216, 228, 241, 0.7);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .scoringGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bandRow {
+    grid-template-columns: auto auto;
+  }
+
+  .bandMeaning {
+    grid-column: 1 / -1;
+  }
+}
