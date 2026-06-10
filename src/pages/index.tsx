@@ -55,6 +55,32 @@ const productSignals = [
   "Async deep analysis queue for longer reviews",
 ];
 
+const useCases = [
+  "Pre-LLM request scanning",
+  "Red-team prompt review",
+  "CI checks for prompt libraries",
+  "Support-chatbot guardrails",
+];
+
+const repoUrl = "https://github.com/RazonIn4K/prompt-defenders";
+
+const cliSnippet = `git clone ${repoUrl}
+cd prompt-defenders && npm install
+npx prompt-defender scan examples/injection_simple.txt --rules basic`;
+
+const integrationSnippet = `import { scanInput } from "./src/lib/scanner";
+
+app.post("/chat", (req, res) => {
+  const scan = scanInput(String(req.body?.prompt ?? ""));
+  if (scan.success && scan.analysis.score >= 50) {
+    return res.status(422).json({
+      blocked: true,
+      advisories: scan.analysis.advisories,
+    });
+  }
+  // safe: forward the prompt to your model
+});`;
+
 const coverageAreas = [
   {
     title: "Instruction override",
@@ -186,10 +212,10 @@ export default function Home() {
 
         <main className={styles.container}>
           <section className={styles.hero}>
-            <div className={styles.eyebrow}>Prompt injection scanner</div>
-            <h1 className={styles.title}>Inspect prompts before they reach production</h1>
+            <div className={styles.eyebrow}>Prompt injection scanner + rules engine</div>
+            <h1 className={styles.title}>Score prompts for injection risk before they reach your LLM</h1>
             <p className={styles.subtitle}>
-              Prompt Defenders scores prompt text against rule packs, surfaces concrete
+              Prompt Defenders scores prompt text against a versioned rule pack, surfaces concrete
               advisories, and keeps raw prompt content out of storage. It is built for teams that
               need a gate before unsafe instructions reach a model or an operator.
             </p>
@@ -200,13 +226,76 @@ export default function Home() {
                 </span>
               ))}
             </div>
+            <div className={styles.heroLinks}>
+              <a href="#scanner" className={styles.primaryButton}>
+                Try the scanner
+              </a>
+              <Link href="/rules" className={styles.secondaryButton}>
+                View the rules
+              </Link>
+              <a
+                href={`${repoUrl}#api-documentation`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.secondaryButton}
+              >
+                API docs
+              </a>
+              <a
+                href={`${repoUrl}#quick-start`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.secondaryButton}
+              >
+                Install the CLI
+              </a>
+            </div>
           </section>
 
-          <section className={styles.layout}>
+          <section className={styles.useCaseSection}>
+            <p className={styles.sectionLabel}>Use cases</p>
+            <div className={styles.signalRow}>
+              {useCases.map((useCase) => (
+                <span key={useCase} className={styles.signalPill}>
+                  {useCase}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.productGrid}>
+            <div className={styles.sideCard}>
+              <p className={styles.sectionLabel}>CLI</p>
+              <h2 className={styles.cardTitle}>Scan from the terminal or CI</h2>
+              <pre className={styles.codeBlock}>{cliSnippet}</pre>
+              <p className={styles.productNote}>
+                The CLI ships in this repo today (also reads stdin with{" "}
+                <code>scan -</code>); an npm package is on the roadmap.
+              </p>
+            </div>
+            <div className={styles.sideCard}>
+              <p className={styles.sectionLabel}>Integration</p>
+              <h2 className={styles.cardTitle}>Gate requests in middleware</h2>
+              <pre className={styles.codeBlock}>{integrationSnippet}</pre>
+              <p className={styles.productNote}>
+                Adapted from the runnable Express demo in{" "}
+                <a
+                  href={`${repoUrl}/tree/main/examples/integration_demo`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  examples/integration_demo
+                </a>
+                .
+              </p>
+            </div>
+          </section>
+
+          <section className={styles.layout} id="scanner">
             <div className={styles.scannerCard}>
               <div className={styles.cardHeader}>
                 <div>
-                  <p className={styles.sectionLabel}>Scanner</p>
+                  <p className={styles.sectionLabel}>Try it now</p>
                   <h2 className={styles.cardTitle}>Run a prompt through the rule pack</h2>
                 </div>
                 <div className={styles.statusDot} aria-hidden="true" />
@@ -408,6 +497,14 @@ export default function Home() {
               </div>
             )}
           </section>
+
+          <footer className={styles.footer}>
+            Built by{" "}
+            <a href="https://davidtiz.com" target="_blank" rel="noopener noreferrer">
+              David Ortiz
+            </a>
+            .
+          </footer>
         </main>
       </div>
     </>
