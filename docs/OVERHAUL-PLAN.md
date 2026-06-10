@@ -22,8 +22,8 @@ Strong product foundation already in place:
   demo a stronger product landing."
 - **API**: `POST /api/scan` (fast regex scan), `POST /api/scan/deep` (enqueue async
   LLM analysis via Upstash queue), `GET /api/scan/result?id=UUID` (poll).
-- **Rules engine**: `public/api/scanner/rules/rules.json` — v1.0.1 (2025-11-07),
-  10 rules (PI-001…PI-010), severity weights low=10 / medium=25 / high=50 /
+- **Rules engine**: `public/api/scanner/rules/rules.json` — v1.0.2 (2026-04-23),
+  12 rules (PI-001…PI-012), severity weights low=10 / medium=25 / high=50 /
   critical=100, risk bands 0-19 / 20-49 / 50-79 / 80-100.
 - **Rules governance is real**: `scripts/validate-rules.js` (JSON syntax, required
   fields, severity enum, regex compilation), `scripts/bump-rules-version.mjs`
@@ -51,7 +51,7 @@ The credibility problems:
 3. **The homepage is a bare form**, not a product landing.
 4. **Cross-brand leakage**: `docs/loom/LOOM_SCRIPT.md:11,39,56` ties the tool to
    "csbrainai and Upwork audits."
-5. Repo is 1 commit behind origin/main (clean tree) — fast-forward first.
+5. ~~Repo is 1 commit behind origin/main~~ — resolved 2026-06-09; repo is synced.
 
 ### Stack
 Next.js 16.0.1 (pages router), React 19.2, TypeScript 5.9.3 strict, Vitest 2.1.8,
@@ -76,6 +76,14 @@ Primary CTA: scan a prompt, use the CLI/API, inspect the rules.
 ## PR plan
 
 ### PR P1 — Real quality gate  (Week 1, IMMEDIATE, small)
+
+> **Status: shipped as PR #11 (2026-06-09).** Finding: the old `eslint.config.mjs`
+> was not merely unused — it crashed, because it loaded `next/core-web-vitals`
+> through `FlatCompat` while `eslint-config-next` 16 ships native flat configs.
+> The config now imports `eslint-config-next/core-web-vitals` directly and
+> `@eslint/eslintrc` was removed. `eslint .` was the right call; do not switch
+> to `next lint`. CI also gained the `validate-rules` step, and `next` was
+> patched in-range to 16.2.9 to keep the grype gate green.
 
 Change `package.json`:
 
