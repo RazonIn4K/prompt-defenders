@@ -32,6 +32,9 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Validate rules
+        run: npm run validate-rules
+
       - name: Build
         run: npm run build
 
