@@ -116,6 +116,11 @@ calls the stub lint, update the workflow to rely on the real one.
 
 ### PR P2 — `/rules` explorer  (Week 2 — the hero differentiator)
 
+> **Status: shipped as PR #12 (2026-06-09).** Live at `/rules` (SSG). Also
+> backfilled the missing v1.0.2 entry in `RULES-CHANGELOG.md` — that version
+> shipped in `fff7e80` directly on main, where the PR-only changelog guard
+> never ran, so the audit trail had a hole the page would have exposed.
+
 The governance machinery is genuinely strong and totally invisible. Build a
 read-only page over data that already ships:
 
@@ -144,6 +149,14 @@ Note: rule regex patterns are already public (rules.json ships in `public/`), so
 rendering them is not a disclosure change.
 
 ### PR P3 — Homepage as product landing + demo  (Week 2)
+
+> **Status: shipped as PR #13 (2026-06-09), including the P5 footer credit.**
+> Deviation from the copy below: the CLI strip uses a clone-and-run snippet,
+> not bare `npx prompt-defender ...` — the package is NOT published to npm
+> (registry 404), so the npx-only copy would overclaim. Publishing to npm is
+> a roadmap item. The PR also fixed the CLI bin itself: the tsx/esm loader
+> shim crashed on Node 24 and Windows; the bin now spawns the tsx CLI in a
+> child process, with smoke tests that exercise the real binary in CI.
 
 Keep the current scanner form as the "Try it now" section of `src/pages/index.tsx`,
 and add around it:
@@ -183,6 +196,14 @@ Schema contract already lives at `public/api/scanner/schema.json` — link it.
 
 ### PR P5 — Boundary cleanup  (Week 1–2, small, can ride with P1 or P3)
 
+> **Status: fully absorbed.** `docs/BRAND-BOUNDARY.md` rode with P1 (#11);
+> the footer credit rode with P3 (#13). Grep confirmed the only cross-brand
+> language lives in internal `docs/` sales collateral (LOOM_SCRIPT,
+> upwork_proposal_snippet), which this plan explicitly permits. No public
+> surface carries cross-brand language. Separately, PR #15 fixed dead
+> `promptdefenders.com` URLs (no DNS) and `yourusername` placeholders in
+> README/PRIVACY — the API example now points at the live Vercel deployment.
+
 - `docs/loom/LOOM_SCRIPT.md` (lines 11, 39, 56) ties the product to csbrainai and
   Upwork audits. Sales collateral may stay in `docs/` as internal material, but
   remove cross-brand language from: README, homepage UI, API docs, public docs,
@@ -214,6 +235,13 @@ Scan a prompt; install the CLI; integrate the API; inspect the rules.
 ```
 
 ### PR P6 — Expand the red-team corpus  (Week 3, stretch but valuable)
+
+> **Status: shipped as PR #14 (2026-06-09).** `tests/corpus/` with the five
+> files below; the suite reads `rules.json` and fails if any shipped rule ID
+> lacks corpus coverage, so the every-rule-covered criterion is enforced
+> mechanically. `tests/apiScan.test.ts` validates `/api/scan` responses
+> against `public/api/scanner/schema.json` itself and covers the
+> 405/400/100KB/429 paths. Only P4 (docs surface) remains from this plan.
 
 Tests currently verify rule triggering on 3 example files; there is no E2E API test.
 The rules changelog already claims alignment "with real-world jailbreak transcripts" —
@@ -247,10 +275,11 @@ drive new rules through the existing bump-rules/changelog flow.
 
 ## Done criteria for this repo
 
-- [ ] `npm run lint` is real and green; CI runs lint/typecheck/test/build/validate-rules.
-- [ ] `/rules` explorer live, rendering rules.json + RULES-CHANGELOG.md.
-- [ ] Homepage reads as a product landing with CLI, use cases, integration snippet,
-      and the scan form as "Try it now."
-- [ ] API/integration/security docs navigable from the homepage.
-- [ ] No cross-brand language on any public surface; `docs/BRAND-BOUNDARY.md` exists.
-- [ ] Corpus-driven tests pass and cover every shipped rule ID at least once.
+- [x] `npm run lint` is real and green; CI runs lint/typecheck/test/build/validate-rules. (#11)
+- [x] `/rules` explorer live, rendering rules.json + RULES-CHANGELOG.md. (#12)
+- [x] Homepage reads as a product landing with CLI, use cases, integration snippet,
+      and the scan form as "Try it now." (#13)
+- [ ] API/integration/security docs navigable from the homepage. (Partially: homepage
+      links to README sections with live URLs; dedicated pages are P4, still open.)
+- [x] No cross-brand language on any public surface; `docs/BRAND-BOUNDARY.md` exists. (#11, #13)
+- [x] Corpus-driven tests pass and cover every shipped rule ID at least once. (#14)
