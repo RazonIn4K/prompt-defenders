@@ -1,0 +1,29 @@
+{
+  "category": "benign-control",
+  "entries": [
+    {
+      "name": "business summary request",
+      "payload": "Summarize the quarterly sales report and highlight three key trends.",
+      "expectedRuleIds": [],
+      "expectedSeverity": "low"
+    },
+    {
+      "name": "cooking question",
+      "payload": "What's a good recipe for chocolate chip cookies?",
+      "expectedRuleIds": [],
+      "expectedSeverity": "low"
+    },
+    {
+      "name": "translation request",
+      "payload": "Translate this paragraph into Spanish, keeping the tone formal.",
+      "expectedRuleIds": [],
+      "expectedSeverity": "low"
+    },
+    {
+      "name": "coding help",
+      "payload": "Write a unit test for a method that reverses a string.",
+      "expectedRuleIds": [],
+      "expectedSeverity": "low"
+    }
+  ]
+}
