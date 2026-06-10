@@ -180,6 +180,15 @@ cross-brand.
 
 ### PR P4 — API and integration docs surface  (Week 3)
 
+> **Status: shipped (2026-06-09).** `/docs/api`, `/docs/integrations`, and
+> `/docs/security` are static pages sharing `src/components/DocsLayout.tsx`,
+> distilled from README's API section, `examples/integration_demo`,
+> `docs/ci_integration.md`, and `docs/SECURITY.md` + the privacy posture.
+> The homepage hero's "API docs" link is now internal, and the notice links
+> include the integration and security pages. This completes the plan; the
+> repo's remaining roadmap items (npm publish, real deep-analysis LLM) live
+> in README's roadmap section.
+
 Promote the existing material into navigable docs pages (or a docs section in the
 README if pages are overkill at this stage):
 
@@ -279,7 +288,7 @@ drive new rules through the existing bump-rules/changelog flow.
 - [x] `/rules` explorer live, rendering rules.json + RULES-CHANGELOG.md. (#12)
 - [x] Homepage reads as a product landing with CLI, use cases, integration snippet,
       and the scan form as "Try it now." (#13)
-- [ ] API/integration/security docs navigable from the homepage. (Partially: homepage
-      links to README sections with live URLs; dedicated pages are P4, still open.)
+- [x] API/integration/security docs navigable from the homepage. (P4: `/docs/api`,
+      `/docs/integrations`, `/docs/security` linked from the hero and notice links.)
 - [x] No cross-brand language on any public surface; `docs/BRAND-BOUNDARY.md` exists. (#11, #13)
 - [x] Corpus-driven tests pass and cover every shipped rule ID at least once. (#14)

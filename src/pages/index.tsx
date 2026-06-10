@@ -233,14 +233,9 @@ export default function Home() {
               <Link href="/rules" className={styles.secondaryButton}>
                 View the rules
               </Link>
-              <a
-                href={`${repoUrl}#api-documentation`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.secondaryButton}
-              >
+              <Link href="/docs/api" className={styles.secondaryButton}>
                 API docs
-              </a>
+              </Link>
               <a
                 href={`${repoUrl}#quick-start`}
                 target="_blank"
@@ -310,6 +305,8 @@ export default function Home() {
                 </p>
                 <div className={styles.inlineLinks}>
                   <Link href="/rules">Rule pack explorer</Link>
+                  <Link href="/docs/integrations">Integration guide</Link>
+                  <Link href="/docs/security">Security model</Link>
                   {docsLinks.map((link) => (
                     <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
                       {link.label}
