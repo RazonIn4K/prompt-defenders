@@ -1,7 +1,13 @@
+import { execFile } from "node:child_process";
 import { PassThrough } from "node:stream";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { runCli, buildCliReport } from "../src/cli";
 import { scanInput } from "../src/lib/scanner";
+
+const execFileAsync = promisify(execFile);
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
 interface StreamCollector {
   stream: PassThrough;
@@ -124,4 +130,31 @@ describe("buildCliReport", () => {
     expect(report.issues).toEqual([]);
     expect(report.suggested_mitigations.length).toBeGreaterThan(0);
   });
+});
+
+// The suites above import runCli directly, so they cannot catch breakage in
+// the bin shim's TS loader wiring (which broke silently on Node 24/Windows).
+// These spawn the real binary the way npx does.
+describe("bin/prompt-defender.mjs (real binary)", () => {
+  it("scans the injection example through the actual bin", async () => {
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ["bin/prompt-defender.mjs", "scan", "examples/injection_simple.txt", "--rules", "basic"],
+      { cwd: repoRoot }
+    );
+    const report = JSON.parse(stdout);
+    expect(report.risk_score).toBeGreaterThan(0);
+    expect(report.issues.some((issue: { rule_id: string }) => issue.rule_id === "PI-001")).toBe(true);
+  }, 30_000);
+
+  it("exits zero with an empty report for the benign example", async () => {
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ["bin/prompt-defender.mjs", "scan", "examples/benign_prompt.txt"],
+      { cwd: repoRoot }
+    );
+    const report = JSON.parse(stdout);
+    expect(report.risk_score).toBe(0);
+    expect(report.issues).toEqual([]);
+  }, 30_000);
 });
