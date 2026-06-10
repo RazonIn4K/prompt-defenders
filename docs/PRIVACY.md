@@ -91,7 +91,7 @@ Since we don't store raw input data:
 - **Correction**: No personal data to correct
 
 For telemetry data in Datadog:
-- Contact: privacy@promptdefenders.com (set up if going to production)
+- Contact: [GitHub Issues](https://github.com/RazonIn4K/prompt-defenders/issues) (a privacy email will be set up if going to production)
 
 ## Cookies
 
@@ -124,8 +124,8 @@ We may update this policy. Changes will be:
 ## Contact
 
 For privacy questions or concerns:
-- **Email**: privacy@promptdefenders.com (set up if going to production)
-- **GitHub**: [Create a privacy-related issue](https://github.com/yourusername/prompt-defenders/issues)
+- **GitHub**: [Create a privacy-related issue](https://github.com/RazonIn4K/prompt-defenders/issues)
+- A dedicated privacy email will be set up if this goes to full production.
 
 ## Compliance
 

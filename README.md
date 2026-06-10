@@ -62,7 +62,7 @@ Prompt Defenders is a Next.js application that scans text inputs for prompt inje
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/prompt-defenders.git
+git clone https://github.com/RazonIn4K/prompt-defenders.git
 cd prompt-defenders
 
 # Install dependencies
@@ -252,7 +252,7 @@ def chat(prompt: Prompt):
 In **production**, all API endpoints require an `X-API-Key` header:
 
 ```bash
-curl -X POST https://api.promptdefenders.com/api/scan \
+curl -X POST https://prompt-defenders.vercel.app/api/scan \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your-api-key-here" \
   -d '{"input":"test"}'
@@ -499,7 +499,7 @@ See [docs/SECURITY.md](./docs/SECURITY.md) for detailed security information.
 ### Reporting Security Issues
 
 **DO NOT** create public issues for security vulnerabilities.
-Contact: security@promptdefenders.com
+Report privately via [GitHub Security Advisories](https://github.com/RazonIn4K/prompt-defenders/security/advisories/new).
 
 ## Privacy
 
@@ -659,9 +659,9 @@ ISC
 ## Support
 
 - **Documentation**: See [docs/](./docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/prompt-defenders/issues)
-- **Security**: security@promptdefenders.com
-- **Privacy**: privacy@promptdefenders.com
+- **Issues**: [GitHub Issues](https://github.com/RazonIn4K/prompt-defenders/issues)
+- **Security**: [GitHub Security Advisories](https://github.com/RazonIn4K/prompt-defenders/security/advisories/new)
+- **Privacy**: [GitHub Issues](https://github.com/RazonIn4K/prompt-defenders/issues) (label: privacy)
 
 ---
 
