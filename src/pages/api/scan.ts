@@ -3,6 +3,7 @@ import { authenticateRequest } from "../../lib/auth";
 import { checkRateLimit } from "../../lib/ratelimit";
 import { scanInput } from "../../lib/scanner";
 import { enqueueDeepAnalysis } from "../../lib/queue";
+import { getDeepAnalysisMode, PLACEHOLDER_DISCLAIMER } from "../../lib/deepAnalysisConfig";
 import { captureException } from "../../lib/monitoring";
 
 export default async function handler(
@@ -66,7 +67,8 @@ export default async function handler(
 
     // Optionally enqueue deep analysis (if requested and enabled)
     let queueId: string | null = null;
-    if (deepAnalysis === true) {
+    const deepAnalysisMode = getDeepAnalysisMode();
+    if (deepAnalysis === true && deepAnalysisMode !== "disabled") {
       queueId = await enqueueDeepAnalysis(
         result.meta.inputHash,
         result.meta.inputLength,
@@ -78,15 +80,27 @@ export default async function handler(
       );
     }
 
-    // Return result with optional queue ID
+    // Return result with optional deep analysis status
     return res.status(200).json({
       ...result,
-      ...(queueId && {
-        deepAnalysis: {
-          queueId,
-          status: "pending",
-          pollEndpoint: `/api/scan/result?id=${queueId}`,
-        },
+      ...(deepAnalysis === true && {
+        deepAnalysis: queueId
+          ? {
+              queueId,
+              status: "pending",
+              pollEndpoint: `/api/scan/result?id=${queueId}`,
+              ...(deepAnalysisMode === "placeholder" && {
+                placeholder: true,
+                disclaimer: PLACEHOLDER_DISCLAIMER,
+              }),
+            }
+          : {
+              status: "unavailable",
+              message:
+                deepAnalysisMode === "disabled"
+                  ? "Deep analysis is unavailable on this deployment."
+                  : "Queue service unavailable. Please try again later.",
+            },
       }),
     });
   } catch (error) {

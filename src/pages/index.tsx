@@ -4,6 +4,8 @@ import Link from "next/link";
 import StatusBadge from "../components/StatusBadge";
 import CopyButton from "../components/CopyButton";
 import styles from "./index.module.css";
+import type { GetServerSideProps } from "next";
+import { getDeepAnalysisMode, type DeepAnalysisMode } from "../lib/deepAnalysisConfig";
 
 interface ScanResult {
   success: boolean;
@@ -25,9 +27,12 @@ interface ScanResult {
     timestamp: string;
   };
   deepAnalysis?: {
-    queueId: string;
+    queueId?: string;
     status: string;
-    pollEndpoint: string;
+    pollEndpoint?: string;
+    message?: string;
+    placeholder?: boolean;
+    disclaimer?: string;
   };
   error?: string;
 }
@@ -125,7 +130,15 @@ const docsLinks = [
   },
 ];
 
-export default function Home() {
+interface HomeProps {
+  deepAnalysisMode: DeepAnalysisMode;
+}
+
+export const getServerSideProps: GetServerSideProps<HomeProps> = async () => {
+  return { props: { deepAnalysisMode: getDeepAnalysisMode() } };
+};
+
+export default function Home({ deepAnalysisMode }: HomeProps) {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -355,14 +368,21 @@ export default function Home() {
                   {loading ? "Scanning..." : "Scan input"}
                 </button>
 
+                {deepAnalysisMode !== "disabled" ? (
                 <label className={styles.checkboxRow}>
                   <input
                     type="checkbox"
                     checked={deepAnalysis}
                     onChange={(e) => setDeepAnalysis(e.target.checked)}
                   />
-                  <span>Queue deep analysis asynchronously</span>
+                  <span>
+                      Queue deep analysis asynchronously
+                      {deepAnalysisMode === "placeholder"
+                        ? " (demo placeholder — not a verdict)"
+                        : ""}
+                    </span>
                 </label>
+                ) : null}
               </div>
             </div>
 
@@ -430,7 +450,7 @@ export default function Home() {
 
                 <div className={styles.actionsRow}>
                   <CopyButton data={result} label="Copy full result" />
-                  {result.deepAnalysis && (
+                  {result.deepAnalysis?.queueId && result.deepAnalysis.pollEndpoint && (
                     <a
                       href={result.deepAnalysis.pollEndpoint}
                       target="_blank"
@@ -441,6 +461,20 @@ export default function Home() {
                     </a>
                   )}
                 </div>
+
+                {result.deepAnalysis?.placeholder ? (
+                  <p className={styles.summary}>
+                    Deep analysis is running in demo mode: any result is a demo
+                    placeholder — not a verdict.
+                  </p>
+                ) : null}
+
+                {result.deepAnalysis?.status === "unavailable" ? (
+                  <p className={styles.summary}>
+                    {result.deepAnalysis?.message ??
+                      "Deep analysis is unavailable on this deployment."}
+                  </p>
+                ) : null}
 
                 {riskSummary ? <p className={styles.summary}>{riskSummary}</p> : null}
 

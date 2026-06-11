@@ -11,6 +11,7 @@
 import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
 import { addBreadcrumb } from "./monitoring";
+import { getDeepAnalysisMode, PLACEHOLDER_DISCLAIMER } from "./deepAnalysisConfig";
 
 const QUEUE_PENDING_KEY = "queue:pending";
 const QUEUE_RETRY_KEY = "queue:retry";
@@ -384,6 +385,16 @@ export async function performDeepAnalysis(
   inputHash: string,
   metadata?: Record<string, any>
 ): Promise<any> {
+  const mode = getDeepAnalysisMode();
+
+  if (mode === "disabled") {
+    // Defense in depth: the API refuses to enqueue while disabled; never
+    // fabricate placeholder output for a job that slips through.
+    throw new Error(
+      "Deep analysis is disabled (DEEP_ANALYSIS_MODE=disabled); refusing to run placeholder analysis."
+    );
+  }
+
   addBreadcrumb({
     category: "queue",
     message: "Starting deep analysis",
@@ -391,8 +402,8 @@ export async function performDeepAnalysis(
     level: "info",
   });
 
-  // TODO: Replace with actual LLM API call
-  // For now, simulate processing delay
+  // TODO: Replace with a real LLM API call and flip LLM_INTEGRATION_AVAILABLE
+  // in deepAnalysisConfig.ts. For now, simulate processing delay
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   addBreadcrumb({
@@ -403,9 +414,12 @@ export async function performDeepAnalysis(
   });
 
   return {
+    placeholder: true,
+    disclaimer: PLACEHOLDER_DISCLAIMER,
     deepScore: 75,
     confidence: 0.85,
-    reasoning: "Deep LLM analysis detected potential injection patterns with high confidence.",
+    reasoning:
+      "Demo placeholder output — no real analysis was performed. Do not treat this as a security verdict.",
     recommendations: [
       "Review context boundaries",
       "Implement input sanitization",
