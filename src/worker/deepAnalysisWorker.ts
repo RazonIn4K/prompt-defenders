@@ -1,11 +1,20 @@
 import { initializeMonitoring } from "../lib/monitoring";
 import { runWorker } from "../lib/deepAnalysisWorker";
+import { getDeepAnalysisMode } from "../lib/deepAnalysisConfig";
 
 /**
  * Bootstrap script for the deep analysis background worker.
  * Initializes monitoring and starts the polling loop.
  */
 async function main(): Promise<void> {
+  if (getDeepAnalysisMode() === "disabled") {
+    console.warn(
+      "⚠️  DEEP_ANALYSIS_MODE is disabled; deep analysis worker exiting. " +
+        "Set DEEP_ANALYSIS_MODE=placeholder to run the demo pipeline."
+    );
+    return;
+  }
+
   const monitoringEnabled = initializeMonitoring({
     serviceName: "deep-analysis-worker",
     tracesSampleRate: 0,

@@ -90,6 +90,7 @@ See [.env.example](./.env.example) for all required variables.
 **Optional (Production):**
 - `UPSTASH_REDIS_REST_URL`: Upstash Redis URL for rate limiting & async queue
 - `UPSTASH_REDIS_REST_TOKEN`: Upstash Redis token
+- `DEEP_ANALYSIS_MODE`: Gates deep analysis: `disabled` (default), `placeholder` (demo only), `llm` (reserved)
 - `API_KEYS`: Comma-separated API keys for production authentication (e.g., `key1,key2`)
 
 ### Development
@@ -621,6 +622,7 @@ done
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 - `SENTRY_DSN`
+- `DEEP_ANALYSIS_MODE`
 - `DEEP_ANALYSIS_MAX_ATTEMPTS`
 - `DEEP_ANALYSIS_BACKOFF_BASE_MS`
 - `DEEP_ANALYSIS_BACKOFF_CAP_MS`

@@ -10,6 +10,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { authenticateRequest } from "../../../lib/auth";
 import { checkRateLimit } from "../../../lib/ratelimit";
 import { getJobStatus } from "../../../lib/queue";
+import { PLACEHOLDER_DISCLAIMER } from "../../../lib/deepAnalysisConfig";
 import { addBreadcrumb, captureException } from "../../../lib/monitoring";
 
 export default async function handler(
@@ -111,6 +112,10 @@ export default async function handler(
           status: "completed",
           queueId: job.id,
           enqueuedAt: job.timestamp,
+          ...(job.result?.placeholder === true && {
+            placeholder: true,
+            disclaimer: PLACEHOLDER_DISCLAIMER,
+          }),
           result: job.result,
           meta: {
             inputHash: job.inputHash,

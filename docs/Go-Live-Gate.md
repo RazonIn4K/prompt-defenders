@@ -67,6 +67,7 @@ This document defines the requirements that must be met before deploying any ser
   - [ ] NEXT_PUBLIC_DD_APP_ID and NEXT_PUBLIC_DD_CLIENT_TOKEN
   - [ ] UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
   - [ ] **API_KEYS (Phase 2)**: Comma-separated production API keys
+  - [ ] DEEP_ANALYSIS_MODE explicitly set (disabled unless the placeholder demo is intended)
 - [ ] Secrets properly managed (using secrets manager)
 - [ ] Monitoring and alerting configured
 - [ ] **Async Queue Monitoring (Phase 2)**: Upstash Redis dashboard configured

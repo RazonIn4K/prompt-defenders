@@ -11,6 +11,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { authenticateRequest } from "../../../lib/auth";
 import { checkRateLimit } from "../../../lib/ratelimit";
 import { enqueueDeepAnalysis } from "../../../lib/queue";
+import { getDeepAnalysisMode, PLACEHOLDER_DISCLAIMER } from "../../../lib/deepAnalysisConfig";
 import { addBreadcrumb, captureException } from "../../../lib/monitoring";
 
 export default async function handler(
@@ -50,6 +51,21 @@ export default async function handler(
     }
 
     res.setHeader("X-RateLimit-Remaining", remaining?.toString() || "unknown");
+
+    // Deep analysis must be explicitly enabled via DEEP_ANALYSIS_MODE
+    const mode = getDeepAnalysisMode();
+    if (mode === "disabled") {
+      addBreadcrumb({
+        category: "api",
+        message: "Deep analysis requested while disabled",
+        level: "warning",
+        data: { endpoint: "/api/scan/deep" },
+      });
+      return res.status(503).json({
+        success: false,
+        error: "Deep analysis is unavailable on this deployment.",
+      });
+    }
 
     // Validate request body
     const { inputHash, inputLength, metadata } = req.body;
@@ -100,6 +116,10 @@ export default async function handler(
       success: true,
       queueId,
       status: "pending",
+      ...(mode === "placeholder" && {
+        placeholder: true,
+        disclaimer: PLACEHOLDER_DISCLAIMER,
+      }),
       message: "Deep analysis enqueued. Poll /api/scan/result?id=" + queueId,
       pollEndpoint: `/api/scan/result?id=${queueId}`,
     });
