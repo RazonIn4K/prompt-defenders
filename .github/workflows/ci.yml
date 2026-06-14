@@ -54,7 +54,7 @@ jobs:
         run: syft . -o json > sbom.json
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: sbom.json
