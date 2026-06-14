@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { authenticateRequest } from "../../lib/auth";
 import { checkRateLimit } from "../../lib/ratelimit";
+import { getClientIdentifier } from "../../lib/clientIp";
 import { scanInput } from "../../lib/scanner";
 import { enqueueDeepAnalysis } from "../../lib/queue";
 import { getDeepAnalysisMode, PLACEHOLDER_DISCLAIMER } from "../../lib/deepAnalysisConfig";
@@ -25,11 +26,8 @@ export default async function handler(
       });
     }
 
-    // Get client identifier (IP or forwarded IP)
-    const identifier =
-      (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
-      req.socket.remoteAddress ||
-      "unknown";
+    // Trusted client IP (Vercel-set headers preferred; see lib/clientIp)
+    const identifier = getClientIdentifier(req);
 
     // Check rate limit
     const { success: rateLimitOk, remaining } = await checkRateLimit(identifier);
