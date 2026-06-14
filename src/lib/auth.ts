@@ -127,6 +127,14 @@ function getHostFromUrl(value: string | undefined): string | undefined {
   }
 }
 
+/**
+ * Best-effort same-origin gate so the hosted browser form works without a
+ * client-exposed API key. This is a convenience signal, NOT authentication:
+ * Origin/Referer/Host are all client-spoofable by non-browser callers, so a
+ * scripted request can present a matching Origin and pass. The real abuse
+ * control on the public scan endpoints is the IP-keyed rate limiter
+ * (lib/clientIp + lib/ratelimit); API keys are for attributed/external use.
+ */
 export function isSameOriginRequest(
   headers: Record<string, string | string[] | undefined>
 ): boolean {
