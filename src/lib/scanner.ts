@@ -31,9 +31,24 @@ export interface Rule {
   rationale: string;
 }
 
-// HMAC hash for correlation (not storing raw input)
+const PLACEHOLDER_HASH_SALT = "default-salt-change-in-production";
+
+// HMAC hash for correlation (not storing raw input).
+// inputHash values are returned in API responses, so the salt must be secret:
+// hashing with the published placeholder salt would make those hashes
+// correlatable and dictionary-attackable across deployments. Fail closed in
+// production if the salt is unset or still the placeholder; allow the
+// placeholder only in non-production for local convenience.
 export function hashInput(input: string): string {
-  const salt = process.env.HASH_SALT || "default-salt-change-in-production";
+  const salt = process.env.HASH_SALT;
+  if (!salt || salt === PLACEHOLDER_HASH_SALT) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "HASH_SALT must be set to a non-default value in production"
+      );
+    }
+    return createHmac("sha256", PLACEHOLDER_HASH_SALT).update(input).digest("hex");
+  }
   return createHmac("sha256", salt).update(input).digest("hex");
 }
 
