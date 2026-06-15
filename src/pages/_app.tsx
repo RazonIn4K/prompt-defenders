@@ -1,4 +1,5 @@
 import type { AppProps } from "next/app";
+import Head from "next/head";
 import { useEffect } from "react";
 import { datadogRum } from "@datadog/browser-rum";
 
@@ -36,5 +37,12 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }, []);
 
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <Head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+      </Head>
+      <Component {...pageProps} />
+    </>
+  );
 }
