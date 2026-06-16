@@ -2,6 +2,12 @@
 
 This project is integrated with GitLab CI/CD (mirroring to `gitlab.com/razonin4k/prompt-defenders-ci`) to run automated security scanning and vulnerability checks.
 
+## GitHub Mirror Prerequisite
+
+The GitHub Action at `.github/workflows/gitlab-mirror.yml` mirrors `main` to `gitlab.com/razonin4k/prompt-defenders-ci` only when the GitHub repository secret `GITLAB_MIRROR_TOKEN` is configured.
+
+If that secret is missing, the workflow now exits successfully with an explicit skip message. To enable the mirror, create a GitLab token with write access to `razonin4k/prompt-defenders-ci`, then add it in GitHub as `Settings -> Secrets and variables -> Actions -> Repository secrets -> GITLAB_MIRROR_TOKEN`.
+
 ## Pipeline Scoping
 To optimize runner usage and prevent scanner noise on feature branches, the pipeline is configured with a global `workflow:rules` constraint. Pipelines will **only run on commits to the `main` branch**.
 
