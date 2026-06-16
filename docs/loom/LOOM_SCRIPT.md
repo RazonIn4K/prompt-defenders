@@ -22,6 +22,12 @@ Safe to say:
 - "The hosted form, CLI, authenticated JSON API, and CI-style scanner flow are the integration surfaces."
 - "The output is guidance, not certification."
 
+Local verification on 2026-06-16:
+
+- `npm audit --omit=dev` and `npm audit` both report 0 vulnerabilities.
+- `npm run typecheck`, `npm run lint`, `npm run test`, and `npm run build` pass.
+- Test coverage gate run: 7 files, 65 tests passing.
+
 Avoid:
 
 - "This is a certified security product."
