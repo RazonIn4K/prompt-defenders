@@ -49,8 +49,9 @@ The credibility problems:
 2. **The differentiator (rules governance) is invisible** — it lives in scripts, CI,
    and a changelog, with no public surface.
 3. **The homepage is a bare form**, not a product landing.
-4. **Cross-brand leakage**: `docs/loom/LOOM_SCRIPT.md:11,39,56` ties the tool to
-   "csbrainai and Upwork audits."
+4. **Cross-brand leakage**: resolved in the current Loom script; keep Prompt
+   Defenders demo copy focused on the scanner, rule IDs, advisories, and privacy
+   posture.
 5. ~~Repo is 1 commit behind origin/main~~ — resolved 2026-06-09; repo is synced.
 
 ### Stack
@@ -213,10 +214,10 @@ Schema contract already lives at `public/api/scanner/schema.json` — link it.
 > `promptdefenders.com` URLs (no DNS) and `yourusername` placeholders in
 > README/PRIVACY — the API example now points at the live Vercel deployment.
 
-- `docs/loom/LOOM_SCRIPT.md` (lines 11, 39, 56) ties the product to csbrainai and
-  Upwork audits. Sales collateral may stay in `docs/` as internal material, but
-  remove cross-brand language from: README, homepage UI, API docs, public docs,
-  and metadata.
+- Historical Loom copy previously tied the product to other brands. Sales
+  collateral may stay in `docs/` as internal material, but remove cross-brand
+  language from: README, homepage UI, API docs, public docs, metadata, and the
+  active Loom script.
 - Add `docs/BRAND-BOUNDARY.md`:
 
 ```md

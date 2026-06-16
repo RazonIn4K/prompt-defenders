@@ -1,7 +1,7 @@
 # Prompt Defenders – Managed SaaS Offering Outline
 
 ## Service Model
-- Multi-tenant control plane hosted on Vercel/Cloud Run with per-tenant API keys and isolated rule packs.
+- Multi-tenant control plane hosted on Vercel-first infrastructure, with per-tenant API keys and isolated rule packs.
 - Edge worker (or customer-provided middleware) forwards prompts to `/v1/scan` API before reaching the LLM provider.
 - Optional on-prem agent pulls updated rules + mitigation playbooks for regulated environments.
 
