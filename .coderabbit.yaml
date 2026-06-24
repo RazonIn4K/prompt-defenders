@@ -1,0 +1,165 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit configuration for PromptDefenders.
+# Docs checked: https://docs.coderabbit.ai/reference/configuration (last updated 2026-06-22)
+
+language: "en-US"
+tone_instructions: "Be direct and evidence-based. Prioritize security, privacy, correctness, accessibility, and maintainability over style-only nitpicks."
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  review_details: true
+  commit_status: true
+  fail_commit_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+  disable_cache: true
+
+  path_filters:
+    - "!**/.maps/**"
+    - "!**/.vercel/**"
+    - "!**/.next/**"
+    - "!**/coverage/**"
+    - "!**/test-reports/**"
+    - "!**/*.log"
+    - "!**/*.tsbuildinfo"
+
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        Review for security correctness first: prompt-injection detection logic, bypass-resistance claims, input normalization, safe defaults, deterministic failure behavior, and testability.
+        Flag vague or overbroad security claims that are not supported by code, tests, or docs.
+    - path: "src/app/api/**"
+      instructions: |
+        Review API routes for request validation, auth/API-key handling, rate limiting, abuse prevention, secret handling, and safe error responses. Do not allow raw user payloads or tokens in logs.
+    - path: "src/worker/**"
+      instructions: |
+        Check queue/worker logic for idempotency, retry safety, backoff behavior, poison-message handling, and no leakage of raw inputs to telemetry.
+    - path: "bin/**"
+      instructions: |
+        Review CLI behavior for safe defaults, clear exit codes, no accidental secret printing, and deterministic output suitable for CI/security workflows.
+    - path: "rules/**"
+      instructions: |
+        Treat rules as security-critical. Verify versioning, backward compatibility, false-positive/false-negative implications, and matching tests or examples for new detection behavior.
+    - path: "docs/**"
+      instructions: |
+        Keep public docs defensive and sanitized. Do not publish raw successful injection strings, live exploit chains, secrets, private target details, or claims of complete protection.
+    - path: "demos/**"
+      instructions: |
+        Demos must be safe, toy, and defensive. Flag any example that could be reused as a live bypass recipe without additional authorization context.
+    - path: "examples/**"
+      instructions: |
+        Examples should be minimal, reproducible, and public-safe. Redact credentials and avoid embedding realistic malicious payloads unless they are clearly harmless toy strings.
+    - path: "tests/**"
+      instructions: |
+        Ensure tests cover bypass attempts, benign false-positive controls, malformed input, empty input, and regression cases for every detection/rule change.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 5
+    ignore_title_keywords:
+      - "wip"
+      - "dnm"
+      - "do not merge"
+    drafts: false
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  pre_merge_checks:
+    override_requested_reviewers_only: false
+    docstrings:
+      mode: "off"
+    title:
+      mode: "warning"
+      requirements: "Use a concise, descriptive title. Prefer conventional prefixes such as feat:, fix:, docs:, security:, chore:, or test:."
+    description:
+      mode: "warning"
+    custom_checks:
+      - name: "No secrets or local artifacts"
+        mode: "error"
+        instructions: |
+          Fail if the PR adds or modifies tracked secret-bearing/local files such as .env, .env.*, .vercel/**, .maps/**, private scan reports, tokens, API keys, OAuth secrets, webhook secrets, Sentry auth tokens, or Doppler/Vercel credentials.
+          Allow .env.example only when all values are obvious placeholders and no real token-like values appear.
+      - name: "Sanitized security content"
+        mode: "warning"
+        instructions: |
+          Fail if public docs, demos, examples, or tests add raw successful injection strings, live exploit chains, private target details, or copy-pasteable bypass recipes without clear defensive framing and safe toy/redacted content.
+          Pass when examples are clearly toy, redacted, defensive, and cannot be mistaken for live-target instructions.
+      - name: "Security claims need evidence"
+        mode: "warning"
+        instructions: |
+          Fail if the PR adds claims such as complete protection, guaranteed detection, benchmark superiority, or third-party coverage without supporting tests, data, citations, or a clearly marked limitation.
+
+  tools:
+    github-checks:
+      enabled: true
+      timeout_ms: 900000
+    eslint:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    dotenvLint:
+      enabled: true
+    osvScanner:
+      enabled: true
+    semgrep:
+      enabled: true
+    opengrep:
+      enabled: true
+    reactDoctor:
+      enabled: true
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    presidio:
+      enabled: true
+
+chat:
+  art: false
+  allow_non_org_members: false
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "**/REVIEW.md"
+  learnings:
+    scope: "local"
+    approval_delay: 3
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
+  mcp:
+    usage: "disabled"
+  automatic_repository_linking: false
