@@ -2,6 +2,13 @@
 
 **Privacy-first prompt injection detection scanner with Datadog RUM observability**
 
+**Canonical public URL:** <https://prompt-defenders.vercel.app>
+
+The working Vercel alias is the selected canonical origin. The registered
+`promptdefenders.com` name has no web records and is not attached to the Vercel
+project; no custom-domain launch or redirect is implied. See the dated
+[canonical URL decision and deployment receipt](./docs/CANONICAL-URL-DECISION-2026-08-12.md).
+
 ## Overview
 
 Prompt Defenders is a Next.js application that scans text inputs for prompt injection patterns using regex-based rules and returns a risk score with detailed advisories. Built with privacy and security as core principles.

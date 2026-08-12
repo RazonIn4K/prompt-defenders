@@ -4,6 +4,7 @@ import type { GetStaticProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import StatusBadge from "../components/StatusBadge";
+import { absoluteUrl, SITE_NAME } from "../lib/site";
 import styles from "./rules.module.css";
 
 type Severity = "low" | "medium" | "high" | "critical";
@@ -48,14 +49,25 @@ const riskBands: Array<{ range: string; severity: Severity; meaning: string }> =
 const repoUrl = "https://github.com/RazonIn4K/prompt-defenders";
 
 export default function Rules({ version, updated, rules, changelog }: RulesPageProps) {
+  const title = "Rule Pack | Prompt Defenders";
+  const description =
+    "The versioned prompt injection rule pack behind every Prompt Defenders scan: rule IDs, severities, detection patterns, scoring model, and full version history.";
+  const canonicalUrl = absoluteUrl("/rules");
+
   return (
     <>
       <Head>
-        <title>Rule Pack | Prompt Defenders</title>
-        <meta
-          name="description"
-          content="The versioned prompt injection rule pack behind every Prompt Defenders scan: rule IDs, severities, detection patterns, scoring model, and full version history."
-        />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

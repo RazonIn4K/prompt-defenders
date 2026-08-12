@@ -86,6 +86,7 @@ export default function IntegrationsDocs() {
       title="Integration guide"
       metaDescription="Gate prompts in Express middleware, bridge the CLI from FastAPI, and fail CI builds on high-risk prompt findings with Prompt Defenders."
       description="Three proven integration points: inline middleware before your model call, a CLI bridge from non-Node stacks, and CI gates for prompt libraries."
+      canonicalPath="/docs/integrations"
     >
       <section className={styles.card}>
         <p className={styles.sectionLabel}>Middleware</p>

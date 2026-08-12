@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { absoluteUrl, SITE_NAME } from "../lib/site";
 import styles from "./DocsLayout.module.css";
 
 interface DocsLayoutProps {
   title: string;
   metaDescription: string;
   description: string;
+  canonicalPath: string;
   children: ReactNode;
 }
 
@@ -22,13 +24,25 @@ export default function DocsLayout({
   title,
   metaDescription,
   description,
+  canonicalPath,
   children,
 }: DocsLayoutProps) {
+  const canonicalUrl = absoluteUrl(canonicalPath);
+
   return (
     <>
       <Head>
-        <title>{`${title} | Prompt Defenders`}</title>
+        <title>{`${title} | ${SITE_NAME}`}</title>
         <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:title" content={`${title} | ${SITE_NAME}`} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={`${title} | ${SITE_NAME}`} />
+        <meta name="twitter:description" content={metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

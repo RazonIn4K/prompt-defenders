@@ -16,6 +16,7 @@ export default function SecurityDocs() {
       title="Security model"
       metaDescription="How to deploy Prompt Defenders as a preflight guardrail, its privacy posture (HMAC-only, no raw storage), honest limitations, and complementary controls."
       description="Prompt Defenders is a preflight scanner: it runs before user text reaches privileged LLM contexts so risky content can be blocked, quarantined, or routed for review."
+      canonicalPath="/docs/security"
     >
       <section className={styles.card}>
         <p className={styles.sectionLabel}>Deployment model</p>
