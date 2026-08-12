@@ -6,6 +6,7 @@ import CopyButton from "../components/CopyButton";
 import styles from "./index.module.css";
 import type { GetServerSideProps } from "next";
 import { getDeepAnalysisMode, type DeepAnalysisMode } from "../lib/deepAnalysisConfig";
+import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "../lib/site";
 
 interface ScanResult {
   success: boolean;
@@ -191,6 +192,7 @@ export default function Home({ deepAnalysisMode }: HomeProps) {
   };
 
   const advisoryCount = result?.analysis?.advisories.length ?? 0;
+  const canonicalUrl = absoluteUrl("/");
 
   const riskSummary = useMemo(() => {
     if (!result?.analysis) {
@@ -212,10 +214,16 @@ export default function Home({ deepAnalysisMode }: HomeProps) {
     <>
       <Head>
         <title>Prompt Defenders | Prompt Injection Scanner</title>
-        <meta
-          name="description"
-          content="Prompt Defenders is a privacy-first prompt injection scanner for scoring prompt text, surfacing advisories, and gating unsafe inputs before production."
-        />
+        <meta name="description" content={SITE_DESCRIPTION} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:title" content="Prompt Defenders | Prompt Injection Scanner" />
+        <meta property="og:description" content={SITE_DESCRIPTION} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Prompt Defenders | Prompt Injection Scanner" />
+        <meta name="twitter:description" content={SITE_DESCRIPTION} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

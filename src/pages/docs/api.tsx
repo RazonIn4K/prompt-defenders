@@ -56,6 +56,7 @@ export default function ApiDocs() {
       title="API reference"
       metaDescription="Endpoint specs for the Prompt Defenders scan API: POST /api/scan, POST /api/scan/deep, and GET /api/scan/result, with authentication and rate limits."
       description="Three endpoints: a fast synchronous scan, an async deep-analysis queue, and a polling endpoint. Responses follow a versioned JSON contract."
+      canonicalPath="/docs/api"
     >
       <section className={styles.card}>
         <p className={styles.sectionLabel}>Authentication</p>

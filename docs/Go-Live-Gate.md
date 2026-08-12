@@ -2,6 +2,14 @@
 
 This document defines the requirements that must be met before deploying any service to production.
 
+## Current public URL decision
+
+The existing production alias, <https://prompt-defenders.vercel.app>, is the
+canonical public origin as of 2026-08-12. This URL decision does not mark the
+checklist below complete and does not record a new deployment. The registered
+`promptdefenders.com` name remains unattached and without web records. See
+[the dated decision and deployment receipt](./CANONICAL-URL-DECISION-2026-08-12.md).
+
 ## Security Requirements
 
 - [ ] All security headers configured (CSP, HSTS, X-Frame-Options, etc.)

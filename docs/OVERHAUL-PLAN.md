@@ -214,6 +214,13 @@ Schema contract already lives at `public/api/scanner/schema.json` — link it.
 > `promptdefenders.com` URLs (no DNS) and `yourusername` placeholders in
 > README/PRIVACY — the API example now points at the live Vercel deployment.
 
+> **Canonical follow-up (2026-08-12):** the owner selected the already-working
+> `https://prompt-defenders.vercel.app` alias as the canonical public origin.
+> Issue #25 preserves the custom-domain decision history. The registered
+> `promptdefenders.com` name remains unattached and without web records; no DNS,
+> redirect, or provider setting was changed by the source-only follow-up. See
+> `docs/CANONICAL-URL-DECISION-2026-08-12.md`.
+
 - Historical Loom copy previously tied the product to other brands. Sales
   collateral may stay in `docs/` as internal material, but remove cross-brand
   language from: README, homepage UI, API docs, public docs, metadata, and the
