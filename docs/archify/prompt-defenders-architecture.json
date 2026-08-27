@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Prompt Defenders Scanner",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1260,
+      900
+    ],
+    "views": [
+      {
+        "id": "scan-path",
+        "label": "Fast /api/scan",
+        "focus": [
+          "user",
+          "nextjs",
+          "api-scan",
+          "scanner"
+        ],
+        "note": "User HTTPS to Next.js, then POST /api/scan into scanner.ts and rules.json."
+      },
+      {
+        "id": "deep-queue",
+        "label": "Upstash deep queue",
+        "focus": [
+          "nextjs",
+          "upstash"
+        ],
+        "note": "POST /api/scan/deep enqueues async jobs in Upstash Redis KV."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "frontend",
+      "label": "User",
+      "sublabel": "Browser",
+      "pos": [
+        40,
+        392
+      ],
+      "size": [
+        120,
+        56
+      ]
+    },
+    {
+      "id": "nextjs",
+      "type": "frontend",
+      "label": "Next.js Pages Router",
+      "sublabel": "Vercel · prompt-defenders.vercel.app",
+      "brand": "next-js",
+      "pos": [
+        230,
+        376
+      ],
+      "size": [
+        250,
+        88
+      ]
+    },
+    {
+      "id": "api-scan",
+      "type": "backend",
+      "label": "POST /api/scan",
+      "sublabel": "X-API-Key or same-origin",
+      "pos": [
+        560,
+        380
+      ],
+      "size": [
+        210,
+        80
+      ]
+    },
+    {
+      "id": "scanner",
+      "type": "backend",
+      "label": "Scanner + rules",
+      "sublabel": "scanner.ts · rules.json v1.0.2",
+      "pos": [
+        850,
+        380
+      ],
+      "size": [
+        220,
+        80
+      ]
+    },
+    {
+      "id": "upstash",
+      "type": "messagebus",
+      "label": "Upstash Redis",
+      "sublabel": "deep queue + rate limit",
+      "pos": [
+        560,
+        640
+      ],
+      "size": [
+        210,
+        68
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Public Internet",
+      "wraps": [
+        "user"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Vercel App",
+      "wraps": [
+        "nextjs",
+        "api-scan",
+        "scanner"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Queue",
+      "wraps": [
+        "upstash"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-nextjs",
+      "from": "user",
+      "to": "nextjs",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "nextjs-scan",
+      "from": "nextjs",
+      "to": "api-scan",
+      "label": "POST /api/scan",
+      "variant": "emphasis"
+    },
+    {
+      "id": "scan-scanner",
+      "from": "api-scan",
+      "to": "scanner",
+      "label": "regex + score",
+      "variant": "emphasis"
+    },
+    {
+      "id": "nextjs-upstash",
+      "from": "nextjs",
+      "to": "upstash",
+      "label": "POST /api/scan/deep",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Fast scan",
+      "items": [
+        "Next.js 16 Pages Router at prompt-defenders.vercel.app",
+        "POST /api/scan runs scanner.ts against rules.json v1.0.2 (12 rules)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Auth and privacy",
+      "items": [
+        "Production requires X-API-Key; same-origin hosted form is exempt",
+        "Input is HMAC-SHA256 hashed in memory; results return inputHash, not raw text"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Deep queue",
+      "items": [
+        "POST /api/scan/deep enqueues jobs in Upstash Redis KV with 24-hour TTL",
+        "GET /api/scan/result polls by queueId; deep worker is still an LLM stub"
+      ]
+    }
+  ]
+}
